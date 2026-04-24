@@ -1,0 +1,421 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h1 class="h4 mb-0">ДДС — Дашборд</h1>
+  <div class="d-flex gap-2">
+    <a class="btn btn-sm btn-primary" href="{% url 'dds:dds_create' %}">+ Операция</a>
+    <a class="btn btn-sm btn-outline-secondary" href="{% url 'dds:dds_list' %}">Реестр</a>
+  </div>
+</div>
+
+<form class="row g-2 mb-3">
+  <div class="col-md-4">
+    <select class="form-select" name="hotel">
+      <option value="">Все точки</option>
+      {% for h in hotels %}
+        <option value="{{ h.id }}" {% if selected_hotel and selected_hotel.id == h.id %}selected{% endif %}>
+          {{ h.name }}
+        </option>
+      {% endfor %}
+    </select>
+  </div>
+
+  <div class="col-md-3">
+    <input type="date" class="form-control" name="date_from" value="{{ date_from|date:'Y-m-d' }}">
+  </div>
+  <div class="col-md-3">
+    <input type="date" class="form-control" name="date_to" value="{{ date_to|date:'Y-m-d' }}">
+  </div>
+  <div class="col-md-2 d-grid">
+    <button class="btn btn-dark">Показать</button>
+  </div>
+</form>
+
+<div class="row g-2 mb-3">
+  <div class="col-md-4"><div class="card app-card"><div class="card-body">Доход: <b>{{ income_sum }}</b></div></div></div>
+  <div class="col-md-4"><div class="card app-card"><div class="card-body">Расход: <b>{{ expense_sum }}</b></div></div></div>
+  <div class="col-md-4"><div class="card app-card"><div class="card-body">Баланс: <b>{{ balance }}</b></div></div></div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+{{ income_chart|json_script:"income-chart-data" }}
+{{ expense_chart|json_script:"expense-chart-data" }}
+
+<div class="row g-2">
+  <!-- ===================== ДОХОДЫ ===================== -->
+  <div class="col-lg-6">
+    <div class="card app-card mb-3">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <h2 class="h6 mb-0">Доходы (все точки) — по дням / по способам</h2>
+        </div>
+        <div style="height: 260px;">
+          <canvas id="incomeChart"></canvas>
+        </div>
+        <div class="text-muted small mt-2">
+          Легенда = способ (откуда пришли деньги)
+        </div>
+      </div>
+    </div>
+
+    <div class="card app-card">
+      <div class="card-body">
+        <h2 class="h6 mb-3">Доходы — категории → подкатегории (с разбивкой по способам)</h2>
+
+        <div class="table-responsive">
+          <table class="table table-sm align-middle">
+            <thead>
+              <tr>
+                <th>Категория</th>
+                {% for mh in method_headers %}
+                  <th class="text-end">{{ mh.label }}</th>
+                {% endfor %}
+                <th class="text-end">Итого</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for g in income_groups %}
+                <tr class="table-light">
+                  <td><b>{{ g.name }}</b></td>
+                  {% for v in g.method_totals %}
+                    <td class="text-end"><b>{{ v }}</b></td>
+                  {% endfor %}
+                  <td class="text-end"><b>{{ g.total }}</b></td>
+                </tr>
+
+                {% for s in g.subs %}
+                  <tr>
+                    <td class="ps-4">— {{ s.name }}</td>
+                    {% for v in s.method_totals %}
+                      <td class="text-end">{{ v }}</td>
+                    {% endfor %}
+                    <td class="text-end"><b>{{ s.total }}</b></td>
+                  </tr>
+                {% endfor %}
+              {% empty %}
+                <tr><td colspan="{{ method_headers|length|add:'2' }}" class="text-muted">Нет доходов за период</td></tr>
+              {% endfor %}
+
+              {% if income_uncat.total %}
+                <tr>
+                  <td class="text-muted">Без категории</td>
+                  {% for v in income_uncat.method_totals %}
+                    <td class="text-end text-muted">{{ v }}</td>
+                  {% endfor %}
+                  <td class="text-end text-muted"><b>{{ income_uncat.total }}</b></td>
+                </tr>
+              {% endif %}
+            </tbody>
+          </table>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== РАСХОДЫ ===================== -->
+  <div class="col-lg-6">
+    <div class="card app-card mb-3">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <h2 class="h6 mb-0">Расходы (все точки) — по дням / по способам</h2>
+        </div>
+        <div style="height: 260px;">
+          <canvas id="expenseChart"></canvas>
+        </div>
+        <div class="text-muted small mt-2">
+          Легенда = способ (с какого счёта ушли деньги)
+        </div>
+      </div>
+    </div>
+
+    <div class="card app-card">
+      <div class="card-body">
+        <h2 class="h6 mb-3">Расходы — категории → подкатегории (с разбивкой по способам)</h2>
+
+        <div class="table-responsive">
+          <table class="table table-sm align-middle">
+            <thead>
+              <tr>
+                <th>Категория</th>
+                {% for mh in method_headers %}
+                  <th class="text-end">{{ mh.label }}</th>
+                {% endfor %}
+                <th class="text-end">Итого</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for g in expense_groups %}
+                <tr class="table-light">
+                  <td><b>{{ g.name }}</b></td>
+                  {% for v in g.method_totals %}
+                    <td class="text-end"><b>{{ v }}</b></td>
+                  {% endfor %}
+                  <td class="text-end"><b>{{ g.total }}</b></td>
+                </tr>
+
+                {% for s in g.subs %}
+                  <tr>
+                    <td class="ps-4">— {{ s.name }}</td>
+                    {% for v in s.method_totals %}
+                      <td class="text-end">{{ v }}</td>
+                    {% endfor %}
+                    <td class="text-end"><b>{{ s.total }}</b></td>
+                  </tr>
+                {% endfor %}
+              {% empty %}
+                <tr><td colspan="{{ method_headers|length|add:'2' }}" class="text-muted">Нет расходов за период</td></tr>
+              {% endfor %}
+
+              {% if expense_uncat.total %}
+                <tr>
+                  <td class="text-muted">Без категории</td>
+                  {% for v in expense_uncat.method_totals %}
+                    <td class="text-end text-muted">{{ v }}</td>
+                  {% endfor %}
+                  <td class="text-end text-muted"><b>{{ expense_uncat.total }}</b></td>
+                </tr>
+              {% endif %}
+            </tbody>
+          </table>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card app-card mb-3">
+  <div class="card-body">
+    <h2 class="h6 mb-2">Расходы — % по категориям</h2>
+    <div style="height: 360px;">
+      <canvas id="expenseCategoryBar"></canvas>
+    </div>
+    <div class="text-muted small mt-2">
+      Каждая колонка = доля категории в общих расходах за выбранный период
+    </div>
+  </div>
+</div>
+{{ expense_cat_percent|json_script:"expense-cat-percent" }}
+{{ expense_cat_share|json_script:"expense-cat-share" }}
+
+
+  <div class="col-lg-5">
+    <div class="card app-card">
+      <div class="card-body">
+        <h2 class="h6 mb-2">Инкассации</h2>
+        <div class="table-responsive">
+          <table class="table table-sm align-middle">
+            <thead><tr><th>Дата</th><th>Точка</th><th class="text-end">Сумма</th></tr></thead>
+            <tbody>
+              {% for i in incassos %}
+                <tr>
+                  <td>{{ i.happened_at|date:"d.m.Y H:i" }}</td>
+                  <td>{{ i.hotel.name }}</td>
+                  <td class="text-end"><b>{{ i.amount }}</b></td>
+                </tr>
+              {% empty %}
+                <tr><td colspan="3" class="text-muted">Нет инкассаций</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<script>
+  const incomeData = JSON.parse(document.getElementById("income-chart-data").textContent);
+  const expenseData = JSON.parse(document.getElementById("expense-chart-data").textContent);
+
+  function makeStackedBarChart(canvasId, dataObj) {
+    const ctx = document.getElementById(canvasId);
+    if (!ctx) return;
+
+    return new Chart(ctx, {
+      type: "bar",
+      data: {
+        labels: dataObj.labels,
+        datasets: dataObj.datasets,
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: { mode: "index", intersect: false },
+        plugins: {
+          legend: { position: "bottom" }
+        },
+        scales: {
+          x: { stacked: true },
+          y: { stacked: true }
+        }
+      }
+    });
+  }
+
+  makeStackedBarChart("incomeChart", incomeData);
+  makeStackedBarChart("expenseChart", expenseData);
+</script>
+<script>
+  const expenseCatPercent = JSON.parse(document.getElementById("expense-cat-percent").textContent);
+
+  function fmtMoney(v){
+    const n = Number(v || 0);
+    return n.toLocaleString("ru-RU", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+
+  function makePercentBar(canvasId, obj) {
+    const el = document.getElementById(canvasId);
+    if (!el) return;
+
+    const labels = obj.labels || [];
+    const percents = obj.percent || [];
+    const amounts = obj.amounts || [];
+    const horizontal = labels.length > 10;
+
+    return new Chart(el, {
+      type: "bar",
+      data: {
+        labels,
+        datasets: [{
+          label: "% расходов",
+          data: percents,
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        indexAxis: horizontal ? "y" : "x",
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              label: (ctx) => {
+                const idx = ctx.dataIndex;
+                const pct = percents[idx] ?? 0;
+                const amt = amounts[idx] ?? 0;
+                return ` ${fmtMoney(amt)} сом — ${Number(pct).toFixed(2)}%`;
+              }
+            }
+          }
+        },
+        scales: horizontal
+          ? {
+              x: {
+                beginAtZero: true,
+                max: 100,
+                ticks: { callback: (v) => v + "%" }
+              },
+              y: { ticks: { autoSkip: false } }
+            }
+          : {
+              y: {
+                beginAtZero: true,
+                max: 100,
+                ticks: { callback: (v) => v + "%" }
+              }
+            }
+      }
+    });
+  }
+
+  makePercentBar("expenseCategoryBar", expenseCatPercent);
+</script>
+
+<script>
+  const expenseCatPercent = JSON.parse(document.getElementById("expense-cat-percent").textContent);
+
+
+
+  makePercentBar("expenseCategoryBar", expenseCatPercent);
+</script>
+<script>
+  const expenseCatPercent = JSON.parse(document.getElementById("expense-cat-percent").textContent);
+  const expenseCatShare = JSON.parse(document.getElementById("expense-cat-share").textContent);
+
+  function palette(n){
+    // генерируем цвета без "ручного" списка
+    const colors = [];
+    for (let i=0;i<n;i++){
+      const hue = Math.round((360 / Math.max(n,1)) * i);
+      colors.push(`hsl(${hue} 70% 55%)`);
+    }
+    return colors;
+  }
+
+  function makeExpensePercentBar(canvasId, obj) {
+    const el = document.getElementById(canvasId);
+    if (!el) return;
+
+    const horizontal = (obj.labels || []).length > 8;
+
+    return new Chart(el, {
+      type: "bar",
+      data: {
+        labels: obj.labels,
+        datasets: [{
+          label: "% расходов",
+          data: obj.data
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        indexAxis: horizontal ? "y" : "x",
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              label: (ctx) => `${(ctx.parsed.x ?? ctx.parsed.y).toFixed(1)}%`
+            }
+          }
+        },
+        scales: horizontal
+          ? { x: { beginAtZero: true, max: 100, ticks: { callback: v => v + "%" } } }
+          : { y: { beginAtZero: true, max: 100, ticks: { callback: v => v + "%" } } }
+      }
+    });
+  }
+
+  function makeExpenseSharePie(canvasId, obj) {
+    const el = document.getElementById(canvasId);
+    if (!el) return;
+
+    const total = obj.grand_total || 0;
+    const colors = palette((obj.labels || []).length);
+
+    return new Chart(el, {
+      type: "doughnut",
+      data: {
+        labels: obj.labels,
+        datasets: [{
+          data: obj.data,
+          backgroundColor: colors,
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { position: "bottom" },
+          tooltip: {
+            callbacks: {
+              label: (ctx) => {
+                const val = ctx.parsed || 0;
+                const pct = total > 0 ? (val / total * 100) : 0;
+                return `${ctx.label}: ${val.toFixed(2)} (${pct.toFixed(1)}%)`;
+              }
+            }
+          }
+        }
+      }
+    });
+  }
+
+  makeExpensePercentBar("expenseCategoryBar", expenseCatPercent);
+  makeExpenseSharePie("expenseCategoryPie", expenseCatShare);
+</script>
+
+{% endblock %}

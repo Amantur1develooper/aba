@@ -1,0 +1,252 @@
+{% extends "base.html" %}
+{% load pms_extras %}
+
+{% block content %}
+
+<style>
+  :root{
+    --room-col-w: 110px;
+    --meta-col-w: 210px;
+    --day-min-w-month: 82px;   /* ширина дня в месяце (делай 70-95 как нравится) */
+  }
+
+  /* week: скролла нет */
+  .board-wrap-week { overflow-x: hidden; }
+
+  /* month: скролл по X */
+  .board-wrap-month {
+    overflow-x: auto;
+    overflow-y: visible; /* важно: без вертикального скролла внутри */
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin; /* firefox */
+  }
+  .board-wrap-month::-webkit-scrollbar { height: 8px; } /* тонкая полоса */
+  .board-wrap-month::-webkit-scrollbar-thumb {
+    background: rgba(255,255,255,.18);
+    border-radius: 10px;
+  }
+
+  .board-table { table-layout: fixed; width: 100%; }
+  .board-table th, .board-table td { vertical-align: top; padding: .35rem; }
+
+  /* sticky первые колонки — удобно, когда скроллим месяц */
+  .sticky-col {
+    position: sticky; left: 0;
+    background: var(--bs-body-bg);
+    z-index: 3;
+  }
+  .sticky-col-2 {
+    position: sticky; left: var(--room-col-w);
+    background: var(--bs-body-bg);
+    z-index: 3;
+  }
+
+  .room-col { width: var(--room-col-w); }
+  .meta-col { width: var(--meta-col-w); }
+
+  /* Неделя: 7 колонок делят ширину экрана — скролл не нужен */
+  .board-week .day-col {
+    width: calc((100% - (var(--room-col-w) + var(--meta-col-w))) / 7);
+    min-width: 90px;
+    white-space: nowrap;
+  }
+
+  /* Месяц: фиксированная ширина дня => таблица расширяется => появляется горизонтальный скролл */
+  .board-month .day-col {
+    width: var(--day-min-w-month);
+    min-width: var(--day-min-w-month);
+    white-space: normal; /* чтобы контент не раздувал колонку */
+  }
+
+  /* компактность */
+  .cell-card { font-size: 12px; line-height: 1.15; }
+  .cell-card .btn { padding: .12rem .32rem; font-size: 12px; }
+
+  .cell-empty { opacity: .6; background: rgba(0,0,0,.01); }
+  .cell-occupied { background: rgba(0,0,0,.03); }
+
+  .cell-occupied .cell-card{
+    border-radius: .5rem;
+    padding: .35rem .4rem;
+    background: var(--bs-body-bg);
+    border-left: 5px solid var(--bs-primary);
+    box-shadow: 0 1px 0 rgba(0,0,0,.06);
+  }
+
+  .status-in .cell-card { border-left-color: var(--bs-success); }
+  .status-booked .cell-card { border-left-color: var(--bs-primary); }
+  .status-out .cell-card { border-left-color: var(--bs-secondary); }
+  .status-canceled .cell-card,
+  .status-cancelled .cell-card { border-left-color: var(--bs-danger); }
+
+  /* обрезаем длинные имена в месяце */
+  .name-truncate{
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 100%;
+    display: block;
+  }
+</style>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h1 class="h4 mb-0">Шахматка</h1>
+  {% if selected_hotel %}
+    <a class="btn btn-sm btn-primary" href="{% url 'pms:stay_create' %}?hotel={{ selected_hotel.id }}">
+      + Бронь/Проживание
+    </a>
+  {% endif %}
+</div>
+
+<form class="row g-2 mb-3" method="get">
+  <div class="col-lg-3">
+    <select class="form-select" name="hotel">
+      {% for h in hotels %}
+        <option value="{{ h.id }}" {% if selected_hotel and selected_hotel.id == h.id %}selected{% endif %}>
+          {{ h.name }}
+        </option>
+      {% endfor %}
+    </select>
+  </div>
+
+  <div class="col-lg-2">
+    <select class="form-select" name="view">
+      <option value="week" {% if view_mode == 'week' %}selected{% endif %}>Неделя</option>
+      <option value="month" {% if view_mode == 'month' %}selected{% endif %}>Месяц</option>
+    </select>
+  </div>
+
+  <div class="col-lg-2">
+    <input type="date" class="form-control" name="start" value="{{ period_start|date:'Y-m-d' }}">
+  </div>
+
+  <div class="col-lg-2">
+    <input type="text" class="form-control" name="floor" value="{{ floor }}" placeholder="Этаж">
+  </div>
+
+  <div class="col-lg-2">
+    <select class="form-select" name="room_type">
+      <option value="">Все типы</option>
+      {% for rt in room_types %}
+        <option value="{{ rt.id }}" {% if room_type_id and room_type_id|stringformat:"s" == rt.id|stringformat:"s" %}selected{% endif %}>
+          {{ rt.name }}
+        </option>
+      {% endfor %}
+    </select>
+  </div>
+
+  <div class="col-lg-1 d-grid">
+    <button class="btn btn-dark">OK</button>
+  </div>
+</form>
+
+{% if not selected_hotel %}
+  <div class="alert alert-warning">Нет доступных точек.</div>
+{% else %}
+
+<div class="text-muted small mb-2">
+  Период: <b>{{ period_start }}</b> → <b>{{ period_end }}</b>
+</div>
+
+<div class="{% if view_mode == 'month' %}board-wrap-month{% else %}board-wrap-week{% endif %}">
+  <table class="table table-sm table-bordered board-table {% if view_mode == 'month' %}board-month{% else %}board-week{% endif %}">
+    <thead>
+      <tr>
+        <th class="sticky-col room-col">Номер</th>
+        <th class="sticky-col-2 meta-col">Тип / Уборка</th>
+
+        {% for d in days %}
+          <th class="day-col text-center">
+            {{ d|date:"d.m" }}<br>
+            <span class="text-muted small">{{ d|date:"D" }}</span>
+          </th>
+        {% endfor %}
+      </tr>
+    </thead>
+
+    <tbody>
+      {% for r in rooms %}
+        <tr>
+          <td class="sticky-col room-col">
+            <div class="d-flex flex-column">
+              <b>{{ r.number }}</b>
+              <span class="text-muted small">этаж {{ r.floor }}</span>
+              {% if r.is_out_of_service %}
+                <span class="badge bg-secondary mt-1">ремонт</span>
+              {% endif %}
+            </div>
+          </td>
+
+          <td class="sticky-col-2 meta-col">
+            <div class="d-flex flex-column gap-1">
+              <div class="name-truncate">{{ r.room_type.name }}</div>
+              <div class="text-muted small">вмест.: {{ r.effective_capacity|default:r.capacity }}</div>
+              <span class="badge
+                {% if r.clean_status == 'dirty' %}bg-warning text-dark
+                {% elif r.clean_status == 'progress' %}bg-info text-dark
+                {% else %}bg-success{% endif %}">
+                {{ r.get_clean_status_display }}
+              </span>
+            </div>
+          </td>
+
+          {% for d in days %}
+            {% with day=d|date:"Y-m-d" %}
+              {% with k=r.id|stringformat:"s"|add:":"|add:day %}
+                {% with st=cell_map|get_item:k %}
+                  <td class="day-col p-1 {% if st %}cell-occupied status-{{ st.status }}{% else %}cell-empty{% endif %}">
+                    {% if st %}
+                      <div class="cell-card d-flex flex-column gap-1"
+                           title="{% if st.company %}{{ st.company.name }}{% else %}{{ st.guest_name }}{% endif %} ({{ st.check_in|date:'d.m H:i' }} → {{ st.check_out|date:'d.m H:i' }})">
+                        <span class="badge
+                          {% if st.status == 'in' %}bg-success
+                          {% elif st.status == 'booked' %}bg-primary
+                          {% elif st.status == 'out' %}bg-secondary
+                          {% else %}bg-secondary{% endif %}">
+                          {{ st.get_status_display }}
+                        </span>
+
+                        <span class="small name-truncate">
+                          {% if st.company %}
+                            <b>{{ st.company.name }}</b>
+                          {% else %}
+                            {{ st.guest_name|default:"(без имени)" }}
+                          {% endif %}
+                        </span>
+
+                        {# В месяце делаем ячейку компактной: только ✎, без кнопок заезд/выезд/× #}
+                        <div class="d-flex gap-1 mt-1">
+                          <a class="btn btn-sm btn-outline-secondary" href="{% url 'pms:stay_edit' st.id %}">✎</a>
+
+                          {% if view_mode != 'month' %}
+                            {% if st.status != 'in' %}
+                              <a class="btn btn-sm btn-outline-success" href="{% url 'pms:stay_checkin' st.id %}">Заезд</a>
+                            {% endif %}
+                            {% if st.status == 'in' %}
+                              <a class="btn btn-sm btn-outline-dark" href="{% url 'pms:stay_checkout' st.id %}">Выезд</a>
+                            {% endif %}
+                            <a class="btn btn-sm btn-outline-danger" href="{% url 'pms:stay_cancel' st.id %}">×</a>
+                          {% endif %}
+                        </div>
+                      </div>
+                    {% else %}
+                      <a class="btn btn-sm btn-light w-100"
+                         href="{% url 'pms:stay_create' %}?hotel={{ selected_hotel.id }}&room={{ r.id }}&day={{ day }}">
+                        +
+                      </a>
+                    {% endif %}
+                  </td>
+                {% endwith %}
+              {% endwith %}
+            {% endwith %}
+          {% endfor %}
+        </tr>
+      {% empty %}
+        <tr><td colspan="{{ days|length|add:'2' }}" class="text-muted">Нет номеров по фильтрам.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{% endif %}
+{% endblock %}

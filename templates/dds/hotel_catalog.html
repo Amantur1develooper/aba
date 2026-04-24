@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% block title %}Каталог точек — Акча{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <div>
+    <h1 class="h4 mb-0">Каталог точек</h1>
+    <div class="text-muted small">Список точек/филиалов</div>
+  </div>
+  <a class="btn btn-outline-secondary" href="{% url 'dds:dds_dashboard' %}">← Назад</a>
+</div>
+
+<div class="row g-3">
+  {% if is_fin_admin %}
+  <div class="col-lg-4">
+    <div class="card app-card">
+      <div class="card-body">
+        <h2 class="h6 mb-3">Добавить точка</h2>
+        <form method="post">
+          {% csrf_token %}
+          {{ form.as_p }}
+          <button class="btn btn-dark w-100">Сохранить</button>
+        </form>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  <div class="{% if is_fin_admin %}col-lg-8{% else %}col-12{% endif %}">
+    <div class="card app-card">
+      <div class="card-body">
+        <div class="table-responsive">
+          <table class="table table-sm align-middle">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Точка</th>
+                <th>Вид бизнеса</th>
+                <th>Дата запуска</th>
+                <th>Дата оплаты</th>
+                <th>Статус</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for h in hotels %}
+              <tr>
+                <td class="text-muted">{{ h.id }}</td>
+                <td><b>{{ h.name }}</b></td>
+                <td>{{ h.get_business_type_display }}</td>
+                <td class="text-muted">{{ h.launch_date|date:"d.m.Y"|default:"—" }}</td>
+                <td class="text-muted">{{ h.payment_date|date:"d.m.Y"|default:"—" }}</td>
+                <td>
+                  {% if h.is_active %}
+                    <span class="badge bg-success">Активен</span>
+                  {% else %}
+                    <span class="badge bg-secondary">Отключен</span>
+                  {% endif %}
+                </td>
+              </tr>
+              {% empty %}
+              <tr><td colspan="6" class="text-muted">Точки не добавлены</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

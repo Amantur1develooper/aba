@@ -1,0 +1,495 @@
+{% extends "base.html" %}
+{% block title %}{{ hotel.name }} — Акча{% endblock %}
+
+{% block content %}
+
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
+
+  :root {
+    --bg: #f4f6fb;
+    --bg2: #edf0f7;
+    --bg3: #e8ecf4;
+    --surface: #ffffff;
+    --border: rgba(0,0,0,0.07);
+    --border2: rgba(0,0,0,0.12);
+    --accent: #4f63e7;
+    --accent2: #16a34a;
+    --accent3: #ea580c;
+    --accent4: #e11d48;
+    --text: #111827;
+    --text2: #6b7280;
+    --text3: #9ca3af;
+    --gold: #d97706;
+    --income-color: #16a34a;
+    --expense-color: #e11d48;
+    --mono: 'JetBrains Mono', monospace;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg) !important; color: var(--text) !important; font-family: 'Manrope', sans-serif !important; }
+
+  .dds-wrap { max-width: 1380px; margin: 0 auto; padding: 24px 28px 60px; }
+
+  /* ─── FILTER BAR ─── */
+  .filter-bar {
+    display: flex; gap: 8px; align-items: center;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 12px; padding: 12px 16px; margin-bottom: 16px;
+    flex-wrap: wrap; box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+  }
+  .filter-label { font-size: 11px; color: var(--text2); font-weight: 600; text-transform: uppercase; letter-spacing: 1px; margin-right: 4px; white-space: nowrap; }
+  .filter-bar input[type="date"] {
+    background: var(--surface); border: 1px solid var(--border2); color: var(--text);
+    border-radius: 8px; padding: 7px 12px; font-family: var(--mono); font-size: 13px;
+    outline: none; transition: border-color .15s; min-width: 145px;
+  }
+  .filter-bar input[type="date"]:focus { border-color: var(--accent); }
+  .filter-sep { color: var(--text3); font-size: 12px; padding: 0 2px; }
+  .filter-btn { background: var(--accent); color: #fff; border: none; border-radius: 8px; padding: 8px 18px; font-family: 'Manrope', sans-serif; font-size: 13px; font-weight: 700; cursor: pointer; transition: opacity .15s; }
+  .filter-btn:hover { opacity: .88; }
+  .filter-excel { background: rgba(22,163,74,.1); color: var(--accent2); border: 1px solid rgba(22,163,74,.25); border-radius: 8px; padding: 7px 14px; font-size: 13px; font-weight: 700; text-decoration: none; transition: all .15s; display: inline-flex; align-items: center; gap: 5px; }
+  .filter-excel:hover { background: rgba(22,163,74,.18); color: var(--accent2); }
+  .filter-bar .ms-auto { margin-left: auto; display: flex; gap: 8px; align-items: center; }
+
+  /* ─── PAGE HEADER ─── */
+  .page-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 28px; flex-wrap: wrap; gap: 12px; }
+  .hotel-title { font-size: 26px; font-weight: 800; letter-spacing: -0.5px; color: var(--text); display: flex; align-items: center; gap: 10px; }
+  .hotel-badge { display: inline-block; background: linear-gradient(135deg, var(--accent), #6b7fff); color: #fff; font-size: 10px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; padding: 3px 8px; border-radius: 4px; }
+  .hotel-subtitle { font-size: 12px; color: var(--text2); margin-top: 4px; }
+  .header-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+
+  /* ─── BUTTONS ─── */
+  .btn-ghost    { background: var(--surface); color: var(--text2); border: 1px solid var(--border2); padding: 8px 14px; border-radius: 8px; font-family: 'Manrope', sans-serif; font-size: 13px; font-weight: 600; cursor: pointer; text-decoration: none; transition: all .15s; display: inline-flex; align-items: center; gap: 5px; box-shadow: 0 1px 3px rgba(0,0,0,.05); }
+  .btn-ghost:hover { background: var(--bg2); color: var(--text); }
+  .btn-incasso  { background: rgba(217,119,6,.1); color: var(--gold); border: 1px solid rgba(217,119,6,.25); padding: 8px 14px; border-radius: 8px; font-family: 'Manrope', sans-serif; font-size: 13px; font-weight: 700; cursor: pointer; text-decoration: none; transition: all .15s; display: inline-flex; align-items: center; gap: 5px; }
+  .btn-incasso:hover { background: rgba(217,119,6,.18); color: var(--gold); }
+  .btn-transfer { background: rgba(79,99,231,.1); color: var(--accent); border: 1px solid rgba(79,99,231,.22); padding: 8px 14px; border-radius: 8px; font-family: 'Manrope', sans-serif; font-size: 13px; font-weight: 700; cursor: pointer; text-decoration: none; transition: all .15s; display: inline-flex; align-items: center; gap: 5px; }
+  .btn-transfer:hover { background: rgba(79,99,231,.18); color: var(--accent); }
+  .btn-income   { background: linear-gradient(135deg, var(--accent2), #22c55e); color: #fff; border: none; padding: 8px 16px; border-radius: 8px; font-family: 'Manrope', sans-serif; font-size: 13px; font-weight: 700; cursor: pointer; text-decoration: none; transition: all .15s; display: inline-flex; align-items: center; gap: 5px; box-shadow: 0 2px 8px rgba(22,163,74,.25); }
+  .btn-income:hover { opacity: .9; transform: translateY(-1px); color: #fff; }
+  .btn-expense  { background: linear-gradient(135deg, var(--accent4), #f43f5e); color: #fff; border: none; padding: 8px 16px; border-radius: 8px; font-family: 'Manrope', sans-serif; font-size: 13px; font-weight: 700; cursor: pointer; text-decoration: none; transition: all .15s; display: inline-flex; align-items: center; gap: 5px; box-shadow: 0 2px 8px rgba(225,29,72,.25); }
+  .btn-expense:hover { opacity: .9; transform: translateY(-1px); color: #fff; }
+
+  /* ─── SECTION LABEL ─── */
+  .section-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; color: var(--text3); margin-bottom: 12px; margin-top: 8px; display: flex; align-items: center; gap: 8px; }
+  .section-label::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+  /* ─── CARDS GRID ─── */
+  .cards-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 14px; }
+  @media (max-width: 900px) { .cards-grid { grid-template-columns: 1fr 1fr; } }
+  @media (max-width: 600px) { .cards-grid { grid-template-columns: 1fr; } }
+
+  .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 20px 22px; transition: border-color .2s, transform .2s; position: relative; overflow: hidden; box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
+  .stat-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; background: var(--card-accent, transparent); border-radius: 14px 14px 0 0; }
+  .stat-card:hover { border-color: var(--border2); transform: translateY(-1px); }
+  .stat-card.accent-blue  { --card-accent: linear-gradient(90deg, var(--accent), #8b96ff); }
+  .stat-card.accent-green { --card-accent: linear-gradient(90deg, var(--accent2), #22d3a0); }
+  .stat-card.accent-orange{ --card-accent: linear-gradient(90deg, var(--accent3), #fbbf24); }
+  .stat-card.accent-red   { --card-accent: linear-gradient(90deg, var(--accent4), #f43f5e); }
+  .stat-card.accent-gold  { --card-accent: linear-gradient(90deg, var(--gold), var(--accent3)); }
+
+  .stat-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; color: var(--text2); margin-bottom: 10px; display: flex; align-items: center; gap: 6px; }
+  .stat-icon  { width: 20px; height: 20px; border-radius: 5px; display: inline-flex; align-items: center; justify-content: center; font-size: 11px; }
+  .stat-value { font-family: var(--mono); font-size: 28px; font-weight: 700; color: var(--text); letter-spacing: -1px; line-height: 1.1; margin-bottom: 6px; }
+  .stat-note  { font-size: 11px; color: var(--text3); margin-top: 6px; }
+
+  .stat-rows { margin-top: 8px; display: flex; flex-direction: column; gap: 6px; }
+  .stat-row  { display: flex; justify-content: space-between; align-items: center; font-size: 13px; }
+  .stat-row-label { color: var(--text2); }
+  .stat-row-val   { font-family: var(--mono); font-size: 13px; font-weight: 600; color: var(--text); }
+  .stat-divider   { height: 1px; background: var(--border); margin: 8px 0; }
+  .stat-total-row { display: flex; justify-content: space-between; font-size: 13px; font-weight: 700; color: var(--text); margin-top: 4px; }
+  .stat-total-row .stat-row-val { color: var(--accent2); }
+
+  .expense-split { display: flex; flex-direction: column; gap: 4px; margin-top: 4px; }
+  .expense-split-row { display: flex; justify-content: space-between; font-size: 13px; }
+  .expense-split-row .lbl { color: var(--text2); }
+  .expense-split-row .val { font-family: var(--mono); font-weight: 600; }
+  .expense-split-row .val.negative { color: var(--accent4); }
+  .expense-split-row .val.positive { color: var(--accent2); }
+
+  /* ─── TWO-COL ─── */
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px; }
+  @media (max-width: 800px) { .two-col { grid-template-columns: 1fr; } }
+
+  /* ─── TABLE CARD ─── */
+  .tbl-card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; margin-bottom: 14px; box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
+  .tbl-card-header { padding: 16px 20px 12px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border); }
+  .tbl-card-title  { font-size: 13px; font-weight: 700; color: var(--text); display: flex; align-items: center; gap: 8px; }
+  .tbl-dot { width: 7px; height: 7px; border-radius: 50%; display: inline-block; }
+  .tbl-dot.green { background: var(--accent2); }
+  .tbl-dot.red   { background: var(--accent4); }
+  .tbl-dot.blue  { background: var(--accent); }
+  .tbl-dot.gold  { background: var(--gold); }
+  .tbl-note { font-size: 11px; color: var(--text3); font-style: italic; }
+
+  table.dds-table { width: 100%; border-collapse: collapse; }
+  table.dds-table thead th { background: var(--bg2); padding: 9px 16px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--text3); text-align: left; border-bottom: 1px solid var(--border); }
+  table.dds-table th.text-end, table.dds-table td.text-end { text-align: right; }
+  table.dds-table tbody tr { border-bottom: 1px solid var(--border); transition: background .12s; }
+  table.dds-table tbody tr:last-child { border-bottom: none; }
+  table.dds-table tbody tr:hover { background: rgba(0,0,0,.018); }
+  table.dds-table td { padding: 10px 16px; font-size: 13px; color: var(--text); }
+  table.dds-table td.mono-val { font-family: var(--mono); font-size: 13px; font-weight: 600; }
+  table.dds-table tbody tr.group-row td { background: var(--bg2); font-size: 12px; font-weight: 700; color: var(--text); padding: 10px 16px; border-bottom: 1px solid var(--border); }
+  table.dds-table tbody tr.sub-row td { color: var(--text2); font-size: 12px; padding-left: 28px; }
+  table.dds-table tbody tr.sub-row td.mono-val { color: var(--text2); }
+
+  .empty-row { color: var(--text3) !important; font-style: italic; font-size: 12px !important; }
+  .tbl-footer { padding: 10px 16px; background: var(--bg2); font-size: 11px; color: var(--text3); border-top: 1px solid var(--border); font-style: italic; }
+
+  .positive { color: var(--accent2) !important; }
+  .negative { color: var(--accent4) !important; }
+  .neutral  { color: var(--text2) !important; }
+
+  .source-chip { display: inline-block; background: var(--bg2); border: 1px solid var(--border2); border-radius: 4px; font-size: 10px; font-weight: 600; color: var(--text3); padding: 2px 6px; font-family: var(--mono); }
+  .date-badge  { font-family: var(--mono); font-size: 12px; color: var(--text2); background: var(--bg2); padding: 2px 7px; border-radius: 4px; white-space: nowrap; }
+
+  .amount-in  { color: var(--income-color); font-family: var(--mono); font-weight: 700; }
+  .amount-out { color: var(--expense-color); font-family: var(--mono); font-weight: 700; }
+  .delta-pos  { color: var(--accent2); font-family: var(--mono); font-weight: 700; }
+  .delta-neg  { color: var(--accent4); font-family: var(--mono); font-weight: 700; }
+  .period-label { display: inline-block; background: rgba(79,99,231,.1); color: var(--accent); border: 1px solid rgba(79,99,231,.18); border-radius: 5px; font-size: 10px; font-weight: 700; letter-spacing: .8px; text-transform: uppercase; padding: 2px 7px; }
+</style>
+
+<div class="dds-wrap">
+
+  <!-- ── FILTER BAR ── -->
+  <form class="filter-bar">
+    <span class="filter-label">📅 Период</span>
+    <input type="date" name="date_from" value="{{ date_from|date:'Y-m-d' }}">
+    <span class="filter-sep">—</span>
+    <input type="date" name="date_to" value="{{ date_to|date:'Y-m-d' }}">
+    <button type="submit" class="filter-btn">Показать</button>
+    <div class="ms-auto">
+      <a class="filter-excel"
+         href="{% url 'dds:hotel_export_excel' hotel.id %}?date_from={{ date_from|date:'Y-m-d' }}&date_to={{ date_to|date:'Y-m-d' }}">
+        ↓ Excel
+      </a>
+    </div>
+  </form>
+
+  <!-- ── PAGE HEADER ── -->
+  <div class="page-header">
+    <div>
+      <div class="hotel-title">
+        {{ hotel.name }}
+        <span class="hotel-badge">Точка</span>
+      </div>
+      <div class="hotel-subtitle">{{ hotel.get_business_type_display }} · Касса (нал/безнал) и ДДС по точке</div>
+      {% if hotel.launch_date or hotel.payment_date %}
+      <div style="display:flex;gap:16px;margin-top:8px;flex-wrap:wrap;">
+        {% if hotel.launch_date %}
+        <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text2);">
+          <span style="font-weight:700;color:var(--accent2);">🚀 Запуск:</span>
+          <span style="font-family:var(--mono);font-weight:600;color:var(--text);">{{ hotel.launch_date|date:"d.m.Y" }}</span>
+        </div>
+        {% endif %}
+        {% if hotel.payment_date %}
+        <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text2);">
+          <span style="font-weight:700;color:var(--gold);">💳 Оплата:</span>
+          <span style="font-family:var(--mono);font-weight:600;color:var(--text);">{{ hotel.payment_date|date:"d.m.Y" }}</span>
+        </div>
+        {% endif %}
+      </div>
+      {% endif %}
+      {% if hotel.website or hotel.app_store_url or hotel.play_market_url %}
+      <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;">
+        {% if hotel.website %}
+        <a href="{{ hotel.website }}" target="_blank"
+           style="display:inline-flex;align-items:center;gap:6px;background:rgba(79,99,231,.1);color:var(--accent);border:1px solid rgba(79,99,231,.22);border-radius:8px;padding:6px 13px;font-size:12px;font-weight:700;text-decoration:none;transition:all .15s;">
+          🌐 Сайт
+        </a>
+        {% endif %}
+        {% if hotel.app_store_url %}
+        <a href="{{ hotel.app_store_url }}" target="_blank"
+           style="display:inline-flex;align-items:center;gap:6px;background:rgba(0,0,0,.06);color:var(--text);border:1px solid var(--border2);border-radius:8px;padding:6px 13px;font-size:12px;font-weight:700;text-decoration:none;transition:all .15s;">
+           App Store
+        </a>
+        {% endif %}
+        {% if hotel.play_market_url %}
+        <a href="{{ hotel.play_market_url }}" target="_blank"
+           style="display:inline-flex;align-items:center;gap:6px;background:rgba(22,163,74,.08);color:var(--accent2);border:1px solid rgba(22,163,74,.22);border-radius:8px;padding:6px 13px;font-size:12px;font-weight:700;text-decoration:none;transition:all .15s;">
+          ▶ Google Play
+        </a>
+        {% endif %}
+      </div>
+      {% endif %}
+    </div>
+    <div class="header-actions">
+      <a class="btn-ghost"     href="{% url 'dds:hotel_list' %}">← Точки</a>
+      <a class="btn-transfer"  href="{% url 'dds:cash_transfer_create' hotel.id %}">⇄ Перевод</a>
+      <a class="btn-incasso"   href="{% url 'dds:incasso_create' hotel.id %}">⬆ Инкассация</a>
+      <a class="btn-income"    href="{% url 'dds:income_add' hotel.id %}">+ Доход</a>
+      <a class="btn-expense"   href="{% url 'dds:expense_add' hotel.id %}">− Расход</a>
+    </div>
+  </div>
+
+  <!-- ── ОСТАТКИ ── -->
+  <div class="section-label">Реальные остатки (касса / счета)</div>
+
+  <div class="cards-grid" style="margin-bottom: 28px;">
+
+    <div class="stat-card accent-green">
+      <div class="stat-label"><span class="stat-icon" style="background:rgba(22,163,74,.15);color:var(--accent2);">💵</span>Наличные (на руках)</div>
+      <div class="stat-value">{{ reg.cash_balance }}</div>
+      <div class="stat-note">Реальный остаток кассы по движениям</div>
+    </div>
+
+    <div class="stat-card accent-blue">
+      <div class="stat-label"><span class="stat-icon" style="background:rgba(79,99,231,.15);color:var(--accent);">🏦</span>Безналичные счета</div>
+      <div class="stat-rows">
+        <div class="stat-row"><span class="stat-row-label">Банк1</span><span class="stat-row-val">{{ reg.mkassa_balance }}</span></div>
+        <div class="stat-row"><span class="stat-row-label">Задаток</span><span class="stat-row-val">{{ reg.zadatok_balance }}</span></div>
+        <div class="stat-row"><span class="stat-row-label">Банк2</span><span class="stat-row-val">{{ reg.optima_balance }}</span></div>
+      </div>
+      <div class="stat-divider"></div>
+      <div class="stat-total-row"><span>Итого безнал</span><span class="stat-row-val">{{ reg.noncash_total }}</span></div>
+    </div>
+
+    <div class="stat-card accent-gold">
+      <div class="stat-label"><span class="stat-icon" style="background:rgba(217,119,6,.15);color:var(--gold);">✦</span>Итого денег (нал + безнал)</div>
+      <div class="stat-value" style="color:var(--gold);">{{ reg.total }}</div>
+      <div class="stat-note">Сумма по всем счетам</div>
+    </div>
+  </div>
+
+  <!-- ── ДДС ── -->
+  <div class="section-label">ДДС за период <span class="period-label">Период</span></div>
+
+  <div class="cards-grid" style="margin-bottom: 28px;">
+
+    <div class="stat-card accent-green">
+      <div class="stat-label"><span class="stat-icon" style="background:rgba(22,163,74,.15);color:var(--accent2);">🛏</span>Доход с номеров</div>
+      <div class="stat-value" style="color:var(--accent2); font-size:24px;">{{ rooms_income_total }}</div>
+      <div class="stat-note">По source="rooms" / названию статьи</div>
+    </div>
+
+    <div class="stat-card accent-blue">
+      <div class="stat-label"><span class="stat-icon" style="background:rgba(79,99,231,.15);color:var(--accent);">↑</span>Общий приход</div>
+      <div class="stat-value" style="color:var(--accent); font-size:24px;">{{ income_total }}</div>
+      <div class="stat-note">Все поступления за выбранный период</div>
+    </div>
+
+    <div class="stat-card accent-red">
+      <div class="stat-label"><span class="stat-icon" style="background:rgba(225,29,72,.15);color:var(--accent4);">↓</span>Расход / Остаток</div>
+      <div class="expense-split">
+        <div class="expense-split-row"><span class="lbl">Расход</span><span class="val negative">{{ expense_total }}</span></div>
+        <div class="stat-divider"></div>
+        <div class="expense-split-row" style="font-weight:700; font-size:15px;">
+          <span class="lbl" style="color:var(--text);">Остаток</span>
+          <span class="val positive" style="font-size:18px;">{{ balance }}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── ДОХОДЫ / РАСХОДЫ ── -->
+  <div class="section-label">Доходы и расходы по категориям</div>
+
+  <div class="two-col">
+    <div class="tbl-card">
+      <div class="tbl-card-header">
+        <div class="tbl-card-title"><span class="tbl-dot green"></span> Доходы — по категориям</div>
+      </div>
+      <table class="dds-table">
+        <thead><tr><th>Категория</th><th class="text-end">Сумма</th></tr></thead>
+        <tbody>
+          {% for g in income_groups %}
+            <tr class="group-row"><td>{{ g.name }}</td><td class="text-end mono-val amount-in">{{ g.total }}</td></tr>
+            {% for s in g.subs %}
+            <tr class="sub-row"><td>— {{ s.name }}</td><td class="text-end mono-val">{{ s.total }}</td></tr>
+            {% endfor %}
+          {% empty %}
+            <tr><td colspan="2" class="empty-row" style="padding:20px 16px;text-align:center;">Нет доходов за период</td></tr>
+          {% endfor %}
+          {% if income_uncat %}
+          <tr><td style="color:var(--text3);font-size:12px;">Без категории</td><td class="text-end mono-val neutral">{{ income_uncat }}</td></tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+
+    <div class="tbl-card">
+      <div class="tbl-card-header">
+        <div class="tbl-card-title"><span class="tbl-dot red"></span> Расходы — по категориям</div>
+      </div>
+      <table class="dds-table">
+        <thead><tr><th>Категория</th><th class="text-end">Сумма</th></tr></thead>
+        <tbody>
+          {% for g in expense_groups %}
+            <tr class="group-row"><td>{{ g.name }}</td><td class="text-end mono-val amount-out">{{ g.total }}</td></tr>
+            {% for s in g.subs %}
+            <tr class="sub-row"><td>— {{ s.name }}</td><td class="text-end mono-val">{{ s.total }}</td></tr>
+            {% endfor %}
+          {% empty %}
+            <tr><td colspan="2" class="empty-row" style="padding:20px 16px;text-align:center;">Нет расходов за период</td></tr>
+          {% endfor %}
+          {% if expense_uncat %}
+          <tr><td style="color:var(--text3);font-size:12px;">Без категории</td><td class="text-end mono-val neutral">{{ expense_uncat }}</td></tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ── ДДС ПО СЧЕТАМ ── -->
+  <div class="section-label">ДДС за период — по счетам</div>
+
+  <div class="tbl-card">
+    <div class="tbl-card-header">
+      <div class="tbl-card-title"><span class="tbl-dot blue"></span> Разбивка по счетам</div>
+      <span class="tbl-note">Оборот за период (реальные остатки — в карточках выше)</span>
+    </div>
+    <table class="dds-table">
+      <thead>
+        <tr><th>Счёт</th><th class="text-end">Приход</th><th class="text-end">Расход</th><th class="text-end">Разница</th></tr>
+      </thead>
+      <tbody>
+        {% for r in period_rows %}
+        <tr>
+          <td style="font-weight:600;">{{ r.label }}</td>
+          <td class="text-end mono-val amount-in">{{ r.income }}</td>
+          <td class="text-end mono-val amount-out">{{ r.expense }}</td>
+          <td class="text-end mono-val delta-pos">{{ r.delta }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="4" class="empty-row" style="padding:20px 16px;text-align:center;">Нет данных за период</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    <div class="tbl-footer">* Это "оборот за период", реальные остатки отображены в карточках выше</div>
+  </div>
+
+  <!-- ── ПОСЛЕДНИЕ ОПЕРАЦИИ ── -->
+  <div class="section-label">Последние операции</div>
+
+  <div class="tbl-card">
+    <div class="tbl-card-header">
+      <div class="tbl-card-title"><span class="tbl-dot gold"></span> Журнал операций</div>
+    </div>
+    <table class="dds-table">
+      <thead>
+        <tr><th>Дата</th><th>Статья</th><th>Счёт</th><th class="text-end">Сумма</th><th>Источник</th></tr>
+      </thead>
+      <tbody>
+        {% for op in last_ops %}
+        <tr>
+          <td><span class="date-badge">{{ op.happened_at|date:"d.m.Y H:i" }}</span></td>
+          <td style="font-size:13px;">{{ op.article.get_kind_display }} — {{ op.article.name }}</td>
+          <td style="color:var(--text2);font-size:12px;">{{ op.get_method_display }}</td>
+          <td class="text-end mono-val amount-in">{{ op.amount }}</td>
+          <td>
+            {% if op.source %}<span class="source-chip">{{ op.source }}</span>
+            {% else %}<span style="color:var(--text3);">—</span>{% endif %}
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="5" class="empty-row" style="padding:20px 16px;text-align:center;">Операций пока нет</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ── КОНТАКТЫ ТОЧКИ ── -->
+  <div class="section-label">Контакты точки</div>
+
+  <div class="tbl-card" style="margin-bottom:14px;">
+    <div class="tbl-card-header">
+      <div class="tbl-card-title"><span class="tbl-dot blue"></span> Сотрудники и контакты</div>
+    </div>
+    <table class="dds-table">
+      <thead>
+        <tr>
+          <th>Имя</th>
+          <th>Должность</th>
+          <th>Телефон</th>
+          <th>WhatsApp</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for c in contacts %}
+        <tr>
+          <td style="font-weight:600;">{{ c.name }}</td>
+          <td style="color:var(--text2);">{{ c.position|default:"—" }}</td>
+          <td class="mono-val" style="font-size:13px;">{{ c.phone|default:"—" }}</td>
+          <td>
+            {% if c.whatsapp %}
+              <a href="https://wa.me/{{ c.whatsapp|cut:'+' }}" target="_blank"
+                 style="color:#25d366;font-family:var(--mono);font-size:13px;font-weight:600;text-decoration:none;">
+                {{ c.whatsapp }}
+              </a>
+            {% else %}—{% endif %}
+          </td>
+          <td style="text-align:right;">
+            <form method="post" action="{% url 'dds:contact_delete' hotel.id c.id %}" style="display:inline;">
+              {% csrf_token %}
+              <button type="submit" style="background:none;border:none;cursor:pointer;color:var(--accent4);font-size:13px;padding:2px 6px;" title="Удалить">✕</button>
+            </form>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="5" class="empty-row" style="padding:20px 16px;text-align:center;">Контакты не добавлены</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+    <!-- форма добавления -->
+    <div style="padding:16px 20px;border-top:1px solid var(--border);background:var(--bg2);">
+      <div style="font-size:12px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:1px;margin-bottom:12px;">Добавить контакт</div>
+      <form method="post" action="{% url 'dds:contact_add' hotel.id %}" style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;">
+        {% csrf_token %}
+        <div style="display:flex;flex-direction:column;gap:4px;min-width:150px;">
+          <label style="font-size:11px;color:var(--text3);font-weight:600;">Имя *</label>
+          <input type="text" name="name" required placeholder="Имя"
+            style="background:var(--surface);border:1px solid var(--border2);border-radius:8px;padding:8px 12px;font-family:'Manrope',sans-serif;font-size:13px;color:var(--text);outline:none;">
+        </div>
+        <div style="display:flex;flex-direction:column;gap:4px;min-width:140px;">
+          <label style="font-size:11px;color:var(--text3);font-weight:600;">Должность</label>
+          <input type="text" name="position" placeholder="Должность"
+            style="background:var(--surface);border:1px solid var(--border2);border-radius:8px;padding:8px 12px;font-family:'Manrope',sans-serif;font-size:13px;color:var(--text);outline:none;">
+        </div>
+        <div style="display:flex;flex-direction:column;gap:4px;min-width:140px;">
+          <label style="font-size:11px;color:var(--text3);font-weight:600;">Телефон</label>
+          <input type="text" name="phone" placeholder="+996…"
+            style="background:var(--surface);border:1px solid var(--border2);border-radius:8px;padding:8px 12px;font-family:'Manrope',sans-serif;font-size:13px;color:var(--text);outline:none;">
+        </div>
+        <div style="display:flex;flex-direction:column;gap:4px;min-width:140px;">
+          <label style="font-size:11px;color:var(--text3);font-weight:600;">WhatsApp</label>
+          <input type="text" name="whatsapp" placeholder="+996…"
+            style="background:var(--surface);border:1px solid var(--border2);border-radius:8px;padding:8px 12px;font-family:'Manrope',sans-serif;font-size:13px;color:var(--text);outline:none;">
+        </div>
+        <button type="submit" class="btn-income" style="height:38px;align-self:flex-end;">+ Добавить</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- ── ДОХОД С НОМЕРОВ ПО ДНЯМ ── -->
+  <div class="section-label">Доход с номеров по дням</div>
+
+  <div class="tbl-card">
+    <div class="tbl-card-header">
+      <div class="tbl-card-title"><span class="tbl-dot green"></span> Ежедневный доход с номеров</div>
+    </div>
+    <table class="dds-table">
+      <thead><tr><th>Дата</th><th class="text-end">Сумма</th></tr></thead>
+      <tbody>
+        {% for r in rooms_by_day %}
+        <tr>
+          <td><span class="date-badge">{{ r.day|date:"d.m.Y" }}</span></td>
+          <td class="text-end mono-val amount-in">{{ r.total }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="2" class="empty-row" style="padding:20px 16px;text-align:center;">Нет доходов с номеров за период</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+</div>
+
+{% endblock %}

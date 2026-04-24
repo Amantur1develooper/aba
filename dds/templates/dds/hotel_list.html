@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% block title %}Точки — Акча{% endblock %}
+
+{% block content %}
+<style>
+  .hotel-card { cursor: pointer; transition: .12s ease; }
+  .hotel-card:hover { transform: translateY(-1px); }
+  .kpi { font-size: 12px; color: var(--bs-secondary); }
+  .money { font-weight: 700; }
+</style>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <div>
+    <h1 class="h4 mb-0">Точки</h1>
+    <div class="text-muted small">Нажми на точка, чтобы открыть кассу и отчёты</div>
+  </div>
+  <a class="btn btn-outline-secondary" href="{% url 'dds:dds_dashboard' %}">← Назад</a>
+</div>
+
+<div class="row g-3">
+  {% for h in hotels %}
+      <div class="col-12 col-md-6 col-xl-4">
+        <div class="card app-card hotel-card" data-href="{% url 'dds:hotel_detail' h.id %}">
+          <div class="card-body">
+            <div class="d-flex justify-content-between align-items-start gap-2">
+              <div>
+                <div class="d-flex align-items-center gap-2">
+                  <h2 class="h6 mb-0">{{ h.name }}</h2>
+                  {% if h.is_active %}
+                    <span class="badge bg-success">Активен</span>
+                  {% else %}
+                    <span class="badge bg-secondary">Отключен</span>
+                  {% endif %}
+                </div>
+                  </div>
+
+              <a class="btn btn-sm btn-dark" href="{% url 'dds:hotel_detail' h.id %}">
+                Открыть
+              </a>
+            </div>
+
+            <div class="d-flex flex-wrap gap-2 mt-3">
+              <a class="btn btn-sm btn-outline-primary" href="{% url 'dds:dds_dashboard' %}?hotel={{ h.id }}">ДДС</a>
+              <a class="btn btn-sm btn-outline-secondary" href="{% url 'dds:cash_transfer_create' h.id %}">Перевод</a>
+              {# если есть PMS #}
+              {# <a class="btn btn-sm btn-outline-dark" href="{% url 'pms:board' %}?hotel={{ h.id }}">Шахматка</a> #}
+            </div>
+
+          </div>
+        </div>
+      </div>
+  {% empty %}
+    <div class="col-12">
+      <div class="alert alert-light border">Нет доступных точек</div>
+    </div>
+  {% endfor %}
+</div>
+
+<script>
+  // клик по карточке -> детали точки
+  document.querySelectorAll(".hotel-card").forEach((el) => {
+    el.addEventListener("click", (e) => {
+      // если кликнули по кнопке/ссылке внутри — не перехватываем
+      if (e.target.closest("a, button")) return;
+      window.location.href = el.dataset.href;
+    });
+  });
+</script>
+{% endblock %}

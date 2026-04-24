@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block content %}
+<h1 class="h5 mb-3">Сторно операции</h1>
+<div class="card">
+  <div class="card-body">
+    <p><b>{{ op.hotel }}</b> — {{ op.article }} — <b>{{ op.amount }}</b></p>
+    <form method="post">
+      {% csrf_token %}
+      <label class="form-label">Причина сторно</label>
+      <input class="form-control mb-2" name="reason" required>
+      <button class="btn btn-danger">Отменить (сторно)</button>
+      <a class="btn btn-outline-secondary" href="{% url 'dds:dds_list' %}">Назад</a>
+    </form>
+  </div>
+</div>
+{% endblock %}

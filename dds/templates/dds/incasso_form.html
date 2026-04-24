@@ -1,0 +1,128 @@
+{% extends "base.html" %}
+{% block title %}Инкассация — {{ hotel.name }}{% endblock %}
+{% block content %}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <div>
+    <h1 class="h5 mb-0">Инкассация — {{ hotel.name }}</h1>
+    <div class="text-muted small">Списание средств с выбранного счета (нал/безнал) в бухгалтерию</div>
+  </div>
+  <a class="btn btn-outline-secondary" href="{% url 'dds:hotel_detail' hotel.id %}">← Назад</a>
+</div>
+
+<!-- Остатки -->
+<div class="row g-2 mb-3">
+  <div class="col-md-3">
+    <div class="card app-card">
+      <div class="card-body">
+        <div class="text-muted small">Наличные</div>
+        <div class="fs-5"><b>{{ reg.cash_balance }}</b></div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card app-card">
+      <div class="card-body">
+        <div class="text-muted small">Mkassa</div>
+        <div class="fs-5"><b>{{ reg.mkassa_balance }}</b></div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card app-card">
+      <div class="card-body">
+        <div class="text-muted small">Задаток</div>
+        <div class="fs-5"><b>{{ reg.zadatok_balance }}</b></div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card app-card">
+      <div class="card-body">
+        <div class="text-muted small">Оптима</div>
+        <div class="fs-5"><b>{{ reg.optima_balance }}</b></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card app-card">
+  <div class="card-body">
+    <form method="post" id="incassoForm"
+      data-cash="{{ reg.cash_balance|default:'0' }}"
+      data-mkassa="{{ reg.mkassa_balance|default:'0' }}"
+      data-zadatok="{{ reg.zadatok_balance|default:'0' }}"
+      data-optima="{{ reg.optima_balance|default:'0' }}"
+    >
+      {% csrf_token %}
+
+      <div class="row g-2">
+        <div class="col-md-4">
+          <label class="form-label">С какого счета</label>
+          {{ form.method }}
+          <div class="text-muted small mt-1" id="availableBox">Доступно: —</div>
+        </div>
+
+        <div class="col-md-4">
+          <label class="form-label">Сумма</label>
+          {{ form.amount }}
+          <div class="text-muted small mt-1" id="afterBox">После инкассации: —</div>
+        </div>
+
+        <div class="col-md-4">
+          <label class="form-label">Дата</label>
+          {{ form.happened_at }}
+        </div>
+
+        <div class="col-12">
+          <label class="form-label">Комментарий</label>
+          {{ form.comment }}
+        </div>
+
+        <div class="col-12 d-flex gap-2">
+          <button class="btn btn-dark">Сохранить</button>
+          <a class="btn btn-outline-secondary" href="{% url 'dds:hotel_detail' hotel.id %}">Отмена</a>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+(function(){
+  const form = document.getElementById("incassoForm");
+  if(!form) return;
+
+  const methodEl = form.querySelector('[name="method"]');
+  const amountEl = form.querySelector('[name="amount"]');
+
+  const availableBox = document.getElementById("availableBox");
+  const afterBox = document.getElementById("afterBox");
+
+  function toNum(v){
+    v = (v ?? "0").toString().replace(",", ".").trim();
+    const n = parseFloat(v);
+    return isNaN(n) ? 0 : n;
+  }
+
+  function getBalance(code){
+    return toNum(form.dataset[code] || "0");
+  }
+
+  function update(){
+    const acc = methodEl ? methodEl.value : "cash";
+    const bal = getBalance(acc);
+    const amt = toNum(amountEl ? amountEl.value : "0");
+    const after = bal - amt;
+
+    availableBox.textContent = "Доступно: " + bal.toFixed(2);
+    afterBox.textContent = "После инкассации: " + after.toFixed(2);
+  }
+
+  if(methodEl) methodEl.addEventListener("change", update);
+  if(amountEl) amountEl.addEventListener("input", update);
+  update();
+})();
+</script>
+
+{% endblock %}

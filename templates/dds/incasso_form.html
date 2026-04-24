@@ -1,0 +1,252 @@
+{% extends "base.html" %}
+{% block title %}Инкассация — {{ hotel.name }}{% endblock %}
+{% block content %}
+
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
+
+  :root {
+    --bg: #f4f6fb;
+    --bg2: #edf0f7;
+    --bg3: #e8ecf4;
+    --surface: #ffffff;
+    --border: rgba(0,0,0,0.08);
+    --border2: rgba(0,0,0,0.14);
+    --accent: #4f63e7;
+    --accent2: #16a34a;
+    --accent4: #e11d48;
+    --text: #111827;
+    --text2: #6b7280;
+    --text3: #9ca3af;
+    --gold: #d97706;
+    --warn: #f59e0b;
+    --mono: 'JetBrains Mono', monospace;
+  }
+
+  * { box-sizing: border-box; }
+  body { background: var(--bg) !important; color: var(--text) !important; font-family: 'Manrope', sans-serif !important; }
+
+  .inc-wrap { max-width: 860px; margin: 0 auto; padding: 28px 20px 60px; }
+
+  .page-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 28px; flex-wrap: wrap; }
+  .page-title { font-size: 22px; font-weight: 800; letter-spacing: -0.4px; color: var(--text); display: flex; align-items: center; gap: 10px; }
+  .page-badge { display: inline-block; background: rgba(217,119,6,.12); color: var(--gold); border: 1px solid rgba(217,119,6,.25); font-size: 10px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; padding: 3px 9px; border-radius: 5px; }
+  .page-subtitle { font-size: 12px; color: var(--text2); margin-top: 5px; }
+  .btn-back { background: var(--surface); color: var(--text2); border: 1px solid var(--border2); padding: 8px 16px; border-radius: 8px; font-family: 'Manrope', sans-serif; font-size: 13px; font-weight: 600; text-decoration: none; transition: all .15s; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 1px 3px rgba(0,0,0,0.06); white-space: nowrap; }
+  .btn-back:hover { background: var(--bg2); color: var(--text); }
+
+  .section-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; color: var(--text3); margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+  .section-label::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+  /* BALANCE CARDS */
+  .balance-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 28px; }
+  @media (max-width: 700px) { .balance-grid { grid-template-columns: 1fr 1fr; } }
+
+  .bal-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 16px 18px; box-shadow: 0 1px 4px rgba(0,0,0,0.06); position: relative; overflow: hidden; transition: border-color .15s, box-shadow .15s; }
+  .bal-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; background: var(--card-top, transparent); border-radius: 12px 12px 0 0; }
+  .bal-card.active { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(79,99,231,.12), 0 2px 8px rgba(0,0,0,0.08); }
+  .bal-card-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; color: var(--text2); margin-bottom: 8px; }
+  .bal-card-value { font-family: var(--mono); font-size: 20px; font-weight: 700; color: var(--text); }
+  .bal-card-after { font-size: 11px; color: var(--text3); margin-top: 5px; font-family: var(--mono); min-height: 16px; transition: color .2s; }
+  .bal-card-after.ok   { color: var(--accent2); }
+  .bal-card-after.warn { color: var(--warn); }
+  .bal-card-after.bad  { color: var(--accent4); }
+
+  /* FORM CARD */
+  .form-card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; box-shadow: 0 1px 6px rgba(0,0,0,0.07); overflow: hidden; }
+  .form-card-header { padding: 18px 24px 16px; border-bottom: 1px solid var(--border); background: var(--bg2); display: flex; align-items: center; gap: 10px; }
+  .form-card-title { font-size: 14px; font-weight: 700; color: var(--text); display: flex; align-items: center; gap: 8px; }
+  .form-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--gold); display: inline-block; }
+  .form-body { padding: 24px; }
+
+  .field-group { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 18px; margin-bottom: 18px; }
+  @media (max-width: 700px) { .field-group { grid-template-columns: 1fr; } }
+  .field-full { grid-column: 1 / -1; }
+  .field-wrap { display: flex; flex-direction: column; gap: 6px; }
+  .field-label { font-size: 12px; font-weight: 700; color: var(--text2); text-transform: uppercase; letter-spacing: .8px; }
+  .field-hint { font-size: 11px; color: var(--text3); margin-top: 2px; font-family: var(--mono); }
+  .field-hint.ok   { color: var(--accent2); font-weight: 600; }
+  .field-hint.bad  { color: var(--accent4); font-weight: 600; }
+  .field-hint.warn { color: var(--warn);    font-weight: 600; }
+
+  .inc-wrap select,
+  .inc-wrap input[type="text"],
+  .inc-wrap input[type="number"],
+  .inc-wrap input[type="date"],
+  .inc-wrap input[type="datetime-local"],
+  .inc-wrap textarea {
+    width: 100%; background: var(--bg2) !important; border: 1px solid var(--border2) !important; border-radius: 9px !important; padding: 10px 14px !important; font-family: 'Manrope', sans-serif !important; font-size: 14px !important; color: var(--text) !important; outline: none !important; transition: border-color .15s, box-shadow .15s !important; box-shadow: none !important;
+  }
+  .inc-wrap select:focus, .inc-wrap input:focus, .inc-wrap textarea:focus {
+    border-color: var(--accent) !important; box-shadow: 0 0 0 3px rgba(79,99,231,.12) !important; background: var(--surface) !important;
+  }
+  .inc-wrap textarea { resize: vertical; min-height: 80px; }
+
+  /* SUMMARY */
+  .summary-box { background: var(--bg2); border: 1px solid var(--border); border-radius: 12px; padding: 16px 20px; margin-bottom: 20px; display: flex; align-items: center; gap: 20px; flex-wrap: wrap; }
+  .summary-item { display: flex; flex-direction: column; gap: 3px; }
+  .summary-item-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--text3); }
+  .summary-item-val { font-family: var(--mono); font-size: 17px; font-weight: 700; color: var(--text); }
+  .summary-item-val.ok        { color: var(--accent2); }
+  .summary-item-val.bad       { color: var(--accent4); }
+  .summary-item-val.highlight { color: var(--accent); }
+  .summary-sep { width: 1px; height: 36px; background: var(--border2); flex-shrink: 0; }
+
+  .form-actions { display: flex; gap: 10px; align-items: center; padding-top: 8px; border-top: 1px solid var(--border); margin-top: 4px; }
+  .btn-submit { background: linear-gradient(135deg, var(--gold), #f59e0b); color: #fff; border: none; padding: 10px 28px; border-radius: 9px; font-family: 'Manrope', sans-serif; font-size: 14px; font-weight: 700; cursor: pointer; transition: all .15s; box-shadow: 0 3px 10px rgba(217,119,6,.3); display: inline-flex; align-items: center; gap: 7px; }
+  .btn-submit:hover { opacity: .9; transform: translateY(-1px); }
+  .btn-cancel { background: transparent; color: var(--text2); border: 1px solid var(--border2); padding: 10px 20px; border-radius: 9px; font-family: 'Manrope', sans-serif; font-size: 14px; font-weight: 600; text-decoration: none; transition: all .15s; display: inline-flex; align-items: center; gap: 6px; }
+  .btn-cancel:hover { background: var(--bg2); color: var(--text); }
+</style>
+
+<div class="inc-wrap">
+
+  <div class="page-header">
+    <div>
+      <div class="page-title">Инкассация <span class="page-badge">{{ hotel.name }}</span></div>
+      <div class="page-subtitle">Списание средств с выбранного счёта (нал/безнал) в бухгалтерию</div>
+    </div>
+    <a class="btn-back" href="{% url 'dds:hotel_detail' hotel.id %}">← Назад к точке</a>
+  </div>
+
+  <div class="section-label">Текущие остатки</div>
+
+  <div class="balance-grid">
+    <div class="bal-card" id="card-cash" style="--card-top: linear-gradient(90deg,#16a34a,#22c55e);">
+      <div class="bal-card-label">💵 Наличные</div>
+      <div class="bal-card-value">{{ reg.cash_balance }}</div>
+      <div class="bal-card-after" id="after-cash"></div>
+    </div>
+    <div class="bal-card" id="card-mkassa" style="--card-top: linear-gradient(90deg,#4f63e7,#818cf8);">
+      <div class="bal-card-label">📱 Банк1</div>
+      <div class="bal-card-value">{{ reg.mkassa_balance }}</div>
+      <div class="bal-card-after" id="after-mkassa"></div>
+    </div>
+    <div class="bal-card" id="card-zadatok" style="--card-top: linear-gradient(90deg,#d97706,#f59e0b);">
+      <div class="bal-card-label">🔒 Задаток</div>
+      <div class="bal-card-value">{{ reg.zadatok_balance }}</div>
+      <div class="bal-card-after" id="after-zadatok"></div>
+    </div>
+    <div class="bal-card" id="card-optima" style="--card-top: linear-gradient(90deg,#0891b2,#22d3ee);">
+      <div class="bal-card-label">🏦 Банк2</div>
+      <div class="bal-card-value">{{ reg.optima_balance }}</div>
+      <div class="bal-card-after" id="after-optima"></div>
+    </div>
+  </div>
+
+  <div class="section-label">Данные инкассации</div>
+
+  <div class="form-card">
+    <div class="form-card-header">
+      <div class="form-card-title"><span class="form-dot"></span> Новая инкассация</div>
+    </div>
+    <div class="form-body">
+      <form method="post" id="incassoForm"
+        data-cash="{{ reg.cash_balance|default:'0' }}"
+        data-mkassa="{{ reg.mkassa_balance|default:'0' }}"
+        data-zadatok="{{ reg.zadatok_balance|default:'0' }}"
+        data-optima="{{ reg.optima_balance|default:'0' }}"
+      >
+        {% csrf_token %}
+
+        <div class="summary-box">
+          <div class="summary-item">
+            <span class="summary-item-label">Счёт</span>
+            <span class="summary-item-val highlight" id="sum-method">—</span>
+          </div>
+          <div class="summary-sep"></div>
+          <div class="summary-item">
+            <span class="summary-item-label">Доступно</span>
+            <span class="summary-item-val" id="sum-available">—</span>
+          </div>
+          <div class="summary-sep"></div>
+          <div class="summary-item">
+            <span class="summary-item-label">Сумма</span>
+            <span class="summary-item-val highlight" id="sum-amount">0,00</span>
+          </div>
+          <div class="summary-sep"></div>
+          <div class="summary-item">
+            <span class="summary-item-label">Остаток после</span>
+            <span class="summary-item-val ok" id="sum-after">—</span>
+          </div>
+        </div>
+
+        <div class="field-group">
+          <div class="field-wrap">
+            <label class="field-label">С какого счёта</label>
+            {{ form.method }}
+            <span class="field-hint" id="hint-available"></span>
+          </div>
+          <div class="field-wrap">
+            <label class="field-label">Сумма инкассации</label>
+            {{ form.amount }}
+            <span class="field-hint" id="hint-after"></span>
+          </div>
+          <div class="field-wrap">
+            <label class="field-label">Дата</label>
+            {{ form.happened_at }}
+          </div>
+          <div class="field-wrap field-full">
+            <label class="field-label">Комментарий</label>
+            {{ form.comment }}
+          </div>
+        </div>
+
+        <div class="form-actions">
+          <button type="submit" class="btn-submit">⬆ Провести инкассацию</button>
+          <a class="btn-cancel" href="{% url 'dds:hotel_detail' hotel.id %}">Отмена</a>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  const form = document.getElementById("incassoForm");
+  if(!form) return;
+
+  const methodEl = form.querySelector('[name="method"]');
+  const amountEl = form.querySelector('[name="amount"]');
+  const cards    = { cash: document.getElementById("card-cash"), mkassa: document.getElementById("card-mkassa"), zadatok: document.getElementById("card-zadatok"), optima: document.getElementById("card-optima") };
+  const afterEls = { cash: document.getElementById("after-cash"), mkassa: document.getElementById("after-mkassa"), zadatok: document.getElementById("after-zadatok"), optima: document.getElementById("after-optima") };
+  const labels   = { cash: "Наличные", mkassa: "Банк1", zadatok: "Задаток", optima: "Банк2" };
+
+  function toNum(v){ v=(v??"0").toString().replace(",",".").trim(); const n=parseFloat(v); return isNaN(n)?0:n; }
+  function fmt(n){ return n.toLocaleString("ru-RU",{minimumFractionDigits:2,maximumFractionDigits:2}); }
+
+  function update(){
+    const acc   = methodEl ? methodEl.value : "cash";
+    const bal   = toNum(form.dataset[acc]||"0");
+    const amt   = toNum(amountEl ? amountEl.value : "0");
+    const after = bal - amt;
+
+    const sm = document.getElementById("sum-method");    if(sm) sm.textContent = labels[acc]||acc;
+    const sa = document.getElementById("sum-available"); if(sa) sa.textContent = fmt(bal);
+    const sq = document.getElementById("sum-amount");    if(sq) sq.textContent = fmt(amt);
+    const sf = document.getElementById("sum-after");
+    if(sf){ sf.textContent = fmt(after); sf.className = "summary-item-val "+(after<0?"bad":after<bal*.1?"warn":"ok"); }
+
+    const ha = document.getElementById("hint-available"); if(ha) ha.textContent = "Доступно: " + fmt(bal);
+    const hf = document.getElementById("hint-after");
+    if(hf && amt>0){ hf.textContent = "После: " + fmt(after); hf.className = "field-hint "+(after<0?"bad":after<bal*.1?"warn":"ok"); }
+    else if(hf){ hf.textContent=""; hf.className="field-hint"; }
+
+    Object.keys(cards).forEach(k => {
+      const card=cards[k]; const el=afterEls[k]; if(!card||!el) return;
+      card.classList.toggle("active", k===acc);
+      if(k===acc && amt>0){
+        const a = toNum(form.dataset[k]||"0") - amt;
+        el.textContent = "→ После: " + fmt(a);
+        el.className = "bal-card-after "+(a<0?"bad":a<toNum(form.dataset[k]||"0")*.1?"warn":"ok");
+      } else { el.textContent=""; el.className="bal-card-after"; }
+    });
+  }
+
+  if(methodEl) methodEl.addEventListener("change", update);
+  if(amountEl) amountEl.addEventListener("input",  update);
+  update();
+})();
+</script>
+
+{% endblock %}

@@ -1,0 +1,248 @@
+{% extends "base.html" %}
+{% block title %}Общая касса — Акча{% endblock %}
+
+{% block content %}
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
+  :root {
+    --bg:#f4f6fb; --bg2:#edf0f7; --surface:#fff;
+    --border:rgba(0,0,0,.07); --border2:rgba(0,0,0,.12);
+    --accent:#4f63e7; --accent2:#16a34a; --accent4:#e11d48;
+    --text:#111827; --text2:#6b7280; --text3:#9ca3af;
+    --gold:#d97706; --mono:'JetBrains Mono',monospace;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{background:var(--bg)!important;color:var(--text)!important;font-family:'Manrope',sans-serif!important;}
+  .gc-wrap{max-width:1200px;margin:0 auto;padding:28px 24px 60px;}
+
+  .page-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:28px;gap:12px;flex-wrap:wrap;}
+  .page-title{font-size:24px;font-weight:800;letter-spacing:-.4px;}
+  .page-sub{font-size:12px;color:var(--text2);margin-top:4px;}
+
+  .btn-back{background:var(--surface);color:var(--text2);border:1px solid var(--border2);padding:8px 16px;border-radius:8px;font-size:13px;font-weight:600;text-decoration:none;display:inline-flex;align-items:center;gap:6px;transition:all .15s;}
+  .btn-back:hover{background:var(--bg2);color:var(--text);}
+
+  .section-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--text3);margin-bottom:14px;margin-top:6px;display:flex;align-items:center;gap:8px;}
+  .section-label::after{content:'';flex:1;height:1px;background:var(--border);}
+
+  /* BALANCE CARDS */
+  .bal-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:24px;}
+  @media(max-width:900px){.bal-grid{grid-template-columns:1fr 1fr;}}
+  .bal-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:18px 20px;box-shadow:0 1px 4px rgba(0,0,0,.06);position:relative;overflow:hidden;}
+  .bal-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--stripe,#ccc);border-radius:14px 14px 0 0;}
+  .bal-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--text3);margin-bottom:8px;}
+  .bal-value{font-family:var(--mono);font-size:22px;font-weight:800;color:var(--text);}
+
+  /* TWO-COL */
+  .two-col{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;}
+  @media(max-width:800px){.two-col{grid-template-columns:1fr;}}
+
+  /* FORM CARD */
+  .form-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.06);}
+  .form-card-header{padding:16px 20px 12px;border-bottom:1px solid var(--border);font-size:13px;font-weight:700;display:flex;align-items:center;gap:8px;}
+  .form-card-body{padding:20px;}
+  .field{display:flex;flex-direction:column;gap:5px;margin-bottom:14px;}
+  .field label{font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.8px;}
+  .field input,.field select,.field textarea{background:var(--bg);border:1px solid var(--border2);border-radius:8px;padding:9px 12px;font-family:'Manrope',sans-serif;font-size:13px;color:var(--text);outline:none;transition:border-color .15s;}
+  .field input:focus,.field select:focus,.field textarea:focus{border-color:var(--accent);background:#fff;}
+  .btn-income{background:linear-gradient(135deg,var(--accent2),#22c55e);color:#fff;border:none;border-radius:8px;padding:10px 22px;font-size:13px;font-weight:700;cursor:pointer;width:100%;transition:opacity .15s;}
+  .btn-income:hover{opacity:.9;}
+  .btn-expense{background:linear-gradient(135deg,var(--accent4),#f43f5e);color:#fff;border:none;border-radius:8px;padding:10px 22px;font-size:13px;font-weight:700;cursor:pointer;width:100%;transition:opacity .15s;}
+  .btn-expense:hover{opacity:.9;}
+
+  /* TABLE */
+  .tbl-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.06);}
+  .tbl-card-header{padding:14px 20px;border-bottom:1px solid var(--border);font-size:13px;font-weight:700;display:flex;align-items:center;gap:8px;}
+  table.t{width:100%;border-collapse:collapse;}
+  table.t thead th{background:var(--bg2);padding:9px 14px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--text3);text-align:left;border-bottom:1px solid var(--border);}
+  table.t tbody tr{border-bottom:1px solid var(--border);transition:background .1s;}
+  table.t tbody tr:last-child{border-bottom:none;}
+  table.t tbody tr:hover{background:rgba(0,0,0,.015);}
+  table.t td{padding:10px 14px;font-size:13px;}
+  .mono{font-family:var(--mono);font-weight:600;}
+  .chip-in{display:inline-block;background:rgba(22,163,74,.1);color:var(--accent2);border:1px solid rgba(22,163,74,.2);border-radius:5px;font-size:10px;font-weight:700;padding:2px 7px;}
+  .chip-out{display:inline-block;background:rgba(225,29,72,.1);color:var(--accent4);border:1px solid rgba(225,29,72,.2);border-radius:5px;font-size:10px;font-weight:700;padding:2px 7px;}
+  .dist-list{font-size:11px;color:var(--text2);margin-top:4px;line-height:1.7;}
+  .dist-item{display:inline-flex;align-items:center;gap:4px;background:var(--bg2);border-radius:4px;padding:1px 6px;margin:1px;}
+  .dist-warn{color:var(--gold);font-size:10px;}
+  .alert-err{background:rgba(225,29,72,.08);border:1px solid rgba(225,29,72,.2);color:var(--accent4);border-radius:8px;padding:10px 14px;margin-bottom:16px;font-size:13px;}
+</style>
+
+<div class="gc-wrap">
+
+  <div class="page-header">
+    <div>
+      <div class="page-title">💰 Общая касса</div>
+      <div class="page-sub">Центральный фонд — пополнение и расход с распределением по точкам</div>
+    </div>
+    <a class="btn-back" href="{% url 'dds:hotel_list' %}">← Точки</a>
+  </div>
+
+  {% if error %}
+  <div class="alert-err">⚠ {{ error }}</div>
+  {% endif %}
+
+  {% if messages %}
+  {% for m in messages %}
+  <div style="background:rgba(22,163,74,.1);border:1px solid rgba(22,163,74,.2);color:var(--accent2);border-radius:8px;padding:10px 14px;margin-bottom:16px;font-size:13px;">✓ {{ m }}</div>
+  {% endfor %}
+  {% endif %}
+
+  <!-- BALANCE CARDS -->
+  <div class="section-label">Остатки общей кассы</div>
+  <div class="bal-grid">
+    <div class="bal-card" style="--stripe:linear-gradient(90deg,#16a34a,#22c55e);">
+      <div class="bal-label">💵 Наличные</div>
+      <div class="bal-value">{{ gcr.cash_balance|floatformat:2 }}</div>
+    </div>
+    <div class="bal-card" style="--stripe:linear-gradient(90deg,#4f63e7,#818cf8);">
+      <div class="bal-label">📱 Банк1</div>
+      <div class="bal-value">{{ gcr.mkassa_balance|floatformat:2 }}</div>
+    </div>
+    <div class="bal-card" style="--stripe:linear-gradient(90deg,#0891b2,#22d3ee);">
+      <div class="bal-label">🔒 Задаток</div>
+      <div class="bal-value">{{ gcr.zadatok_balance|floatformat:2 }}</div>
+    </div>
+    <div class="bal-card" style="--stripe:linear-gradient(90deg,#7c3aed,#a78bfa);">
+      <div class="bal-label">🏦 Банк2</div>
+      <div class="bal-value">{{ gcr.optima_balance|floatformat:2 }}</div>
+    </div>
+    <div class="bal-card" style="--stripe:linear-gradient(90deg,#d97706,#f59e0b);">
+      <div class="bal-label">✦ Итого</div>
+      <div class="bal-value" style="color:var(--gold);">{{ gcr.total|floatformat:2 }}</div>
+    </div>
+  </div>
+
+  <!-- FORMS -->
+  <div class="section-label">Операции</div>
+  <div class="two-col">
+
+    <!-- INCOME FORM -->
+    <div class="form-card">
+      <div class="form-card-header" style="color:var(--accent2);">
+        <span>↑</span> Пополнить общую кассу
+      </div>
+      <div class="form-card-body">
+        <form method="post">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="income">
+          <div class="field">
+            <label>Счёт</label>
+            <select name="account">
+              {% for code, label in account_choices %}
+              <option value="{{ code }}">{{ label }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="field">
+            <label>Сумма</label>
+            <input type="number" name="amount" min="0.01" step="0.01" placeholder="0.00" required>
+          </div>
+          <div class="field">
+            <label>Дата</label>
+            <input type="datetime-local" name="happened_at">
+          </div>
+          <div class="field">
+            <label>Комментарий</label>
+            <textarea name="comment" rows="2" placeholder="Необязательно"></textarea>
+          </div>
+          <button type="submit" class="btn-income">↑ Пополнить</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- EXPENSE FORM -->
+    <div class="form-card">
+      <div class="form-card-header" style="color:var(--accent4);">
+        <span>↓</span> Расход — распределить по точкам
+      </div>
+      <div class="form-card-body">
+        <form method="post">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="expense">
+          <div class="field">
+            <label>Счёт</label>
+            <select name="account">
+              {% for code, label in account_choices %}
+              <option value="{{ code }}">{{ label }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="field">
+            <label>Сумма</label>
+            <input type="number" name="amount" min="0.01" step="0.01" placeholder="0.00" required>
+          </div>
+          <div class="field">
+            <label>Дата</label>
+            <input type="datetime-local" name="happened_at">
+          </div>
+          <div class="field">
+            <label>Комментарий</label>
+            <textarea name="comment" rows="2" placeholder="За что списываем?"></textarea>
+          </div>
+          <button type="submit" class="btn-expense">↓ Списать и распределить</button>
+        </form>
+        <div style="margin-top:12px;font-size:11px;color:var(--text3);line-height:1.6;">
+          Сумма делится поровну между всеми активными точками.<br>
+          Если у точки не хватает — её дефицит покрывают другие точки.
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- HISTORY -->
+  <div class="section-label">История операций</div>
+  <div class="tbl-card">
+    <div class="tbl-card-header">📋 Последние 100 операций</div>
+    <table class="t">
+      <thead>
+        <tr>
+          <th>Дата</th>
+          <th>Тип</th>
+          <th>Счёт</th>
+          <th>Сумма</th>
+          <th>Распределение по точкам</th>
+          <th>Комментарий</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for op in ops %}
+        <tr>
+          <td style="font-family:var(--mono);font-size:12px;color:var(--text2);">{{ op.happened_at|date:"d.m.Y H:i" }}</td>
+          <td>
+            {% if op.direction == "in" %}
+              <span class="chip-in">↑ Приход</span>
+            {% else %}
+              <span class="chip-out">↓ Расход</span>
+            {% endif %}
+          </td>
+          <td style="color:var(--text2);font-size:12px;">{{ op.get_account_display }}</td>
+          <td class="mono">{{ op.amount|floatformat:2 }}</td>
+          <td>
+            {% if op.direction == "out" %}
+              <div class="dist-list">
+                {% for d in op.distributions.all %}
+                  <span class="dist-item">
+                    {{ d.point.name }}: <b>{{ d.amount|floatformat:2 }}</b>
+                    {% if d.note %}<span class="dist-warn" title="{{ d.note }}">⚠</span>{% endif %}
+                  </span>
+                {% empty %}
+                  <span style="color:var(--text3);">—</span>
+                {% endfor %}
+              </div>
+            {% else %}
+              <span style="color:var(--text3);font-size:12px;">—</span>
+            {% endif %}
+          </td>
+          <td style="color:var(--text2);font-size:12px;">{{ op.comment|default:"—" }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="6" style="padding:24px;text-align:center;color:var(--text3);font-style:italic;">Операций пока нет</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+</div>
+{% endblock %}

@@ -1,0 +1,348 @@
+{% extends "base.html" %}
+{% block content %}
+
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
+
+  :root {
+    --bg: #f4f6fb;
+    --bg2: #edf0f7;
+    --bg3: #e8ecf4;
+    --surface: #ffffff;
+    --border: rgba(0,0,0,0.08);
+    --border2: rgba(0,0,0,0.14);
+    --accent: #4f63e7;
+    --accent2: #16a34a;
+    --accent4: #e11d48;
+    --text: #111827;
+    --text2: #6b7280;
+    --text3: #9ca3af;
+    --gold: #d97706;
+    --warn: #f59e0b;
+    --mono: 'JetBrains Mono', monospace;
+  }
+
+  * { box-sizing: border-box; }
+  body { background: var(--bg) !important; color: var(--text) !important; font-family: 'Manrope', sans-serif !important; }
+
+  .ct-wrap { max-width: 860px; margin: 0 auto; padding: 28px 20px 60px; }
+
+  /* ── PAGE HEADER ── */
+  .page-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 28px; flex-wrap: wrap; }
+  .page-title  { font-size: 22px; font-weight: 800; letter-spacing: -0.4px; color: var(--text); display: flex; align-items: center; gap: 10px; }
+  .page-badge  { display: inline-block; background: rgba(79,99,231,.1); color: var(--accent); border: 1px solid rgba(79,99,231,.22); font-size: 10px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; padding: 3px 9px; border-radius: 5px; }
+  .page-subtitle { font-size: 12px; color: var(--text2); margin-top: 5px; }
+  .page-subtitle b { color: var(--text); font-weight: 700; }
+
+  .btn-back { background: var(--surface); color: var(--text2); border: 1px solid var(--border2); padding: 8px 16px; border-radius: 8px; font-family: 'Manrope', sans-serif; font-size: 13px; font-weight: 600; text-decoration: none; transition: all .15s; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 1px 3px rgba(0,0,0,0.06); white-space: nowrap; cursor: pointer; }
+  .btn-back:hover { background: var(--bg2); color: var(--text); }
+
+  /* ── SECTION LABEL ── */
+  .section-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; color: var(--text3); margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+  .section-label::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+  /* ── BALANCE CARDS ── */
+  .balance-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 28px; }
+  @media (max-width: 700px) { .balance-grid { grid-template-columns: 1fr 1fr; } }
+
+  .bal-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 15px 18px; box-shadow: 0 1px 4px rgba(0,0,0,0.06); position: relative; overflow: hidden; transition: border-color .15s, box-shadow .15s; }
+  .bal-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; background: var(--card-top, transparent); border-radius: 12px 12px 0 0; }
+  .bal-card.highlight { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(79,99,231,.1), 0 2px 8px rgba(0,0,0,0.08); }
+  .bal-card-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; color: var(--text2); margin-bottom: 7px; }
+  .bal-card-value { font-family: var(--mono); font-size: 19px; font-weight: 700; color: var(--text); }
+  .bal-card-arrow { font-size: 11px; margin-top: 5px; font-weight: 700; min-height: 15px; }
+  .bal-card-arrow.from { color: var(--accent4); }
+  .bal-card-arrow.to   { color: var(--accent2); }
+
+  /* ── TRANSFER VISUAL ── */
+  .transfer-visual {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 18px 24px;
+    margin-bottom: 22px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+  .tv-account {
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-radius: 10px;
+    padding: 12px 20px;
+    text-align: center;
+    min-width: 120px;
+    transition: border-color .2s, box-shadow .2s;
+  }
+  .tv-account.from { border-color: rgba(225,29,72,.3); box-shadow: 0 0 0 2px rgba(225,29,72,.08); }
+  .tv-account.to   { border-color: rgba(22,163,74,.3);  box-shadow: 0 0 0 2px rgba(22,163,74,.08); }
+  .tv-account-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--text3); margin-bottom: 4px; }
+  .tv-account-name  { font-size: 15px; font-weight: 800; color: var(--text); }
+  .tv-account-bal   { font-family: var(--mono); font-size: 12px; color: var(--text2); margin-top: 3px; }
+  .tv-arrow {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    flex-shrink: 0;
+  }
+  .tv-arrow-line {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 20px;
+    color: var(--accent);
+    font-weight: 800;
+  }
+  .tv-amount { font-family: var(--mono); font-size: 14px; font-weight: 700; color: var(--accent); background: rgba(79,99,231,.1); border: 1px solid rgba(79,99,231,.2); border-radius: 6px; padding: 3px 10px; }
+
+  /* ── FORM CARD ── */
+  .form-card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; box-shadow: 0 1px 6px rgba(0,0,0,0.07); overflow: hidden; }
+  .form-card-header { padding: 16px 24px; border-bottom: 1px solid var(--border); background: var(--bg2); display: flex; align-items: center; gap: 8px; }
+  .form-card-title  { font-size: 14px; font-weight: 700; color: var(--text); display: flex; align-items: center; gap: 8px; }
+  .form-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); display: inline-block; }
+  .form-body { padding: 24px; }
+
+  /* ── FIELD ROWS ── */
+  .field-row   { display: grid; gap: 18px; margin-bottom: 18px; }
+  .field-row-2 { grid-template-columns: 1fr 1fr; }
+  .field-row-3 { grid-template-columns: 1fr 1fr 1fr; }
+  @media (max-width: 640px) { .field-row-2, .field-row-3 { grid-template-columns: 1fr; } }
+  .field-wrap { display: flex; flex-direction: column; gap: 6px; }
+  .field-label { font-size: 12px; font-weight: 700; color: var(--text2); text-transform: uppercase; letter-spacing: .8px; }
+  .field-hint  { font-size: 11px; color: var(--text3); font-style: italic; margin-top: 2px; }
+
+  /* ── DJANGO WIDGET OVERRIDES ── */
+  .ct-wrap select,
+  .ct-wrap input[type="text"],
+  .ct-wrap input[type="number"],
+  .ct-wrap input[type="date"],
+  .ct-wrap input[type="datetime-local"],
+  .ct-wrap textarea {
+    width: 100%; background: var(--bg2) !important; border: 1px solid var(--border2) !important;
+    border-radius: 9px !important; padding: 10px 14px !important; font-family: 'Manrope', sans-serif !important;
+    font-size: 14px !important; color: var(--text) !important; outline: none !important;
+    transition: border-color .15s, box-shadow .15s !important; box-shadow: none !important;
+  }
+  .ct-wrap select:focus,
+  .ct-wrap input:focus,
+  .ct-wrap textarea:focus {
+    border-color: var(--accent) !important; box-shadow: 0 0 0 3px rgba(79,99,231,.12) !important; background: var(--surface) !important;
+  }
+  .ct-wrap textarea { resize: vertical; min-height: 78px; }
+
+  /* ── FIELD ERRORS ── */
+  .field-error { font-size: 11px; color: var(--accent4); font-weight: 600; margin-top: 3px; }
+
+  /* ── ERROR / MESSAGE BLOCKS ── */
+  .alert-block { border-radius: 10px; padding: 12px 16px; margin-bottom: 16px; font-size: 13px; font-weight: 600; }
+  .alert-block.danger  { background: rgba(225,29,72,.07); border: 1px solid rgba(225,29,72,.2); color: var(--accent4); }
+  .alert-block.success { background: rgba(22,163,74,.07); border: 1px solid rgba(22,163,74,.2); color: var(--accent2); }
+  .alert-block.info    { background: rgba(79,99,231,.07);  border: 1px solid rgba(79,99,231,.2); color: var(--accent); }
+  .alert-block.warning { background: rgba(245,158,11,.07); border: 1px solid rgba(245,158,11,.2); color: var(--warn); }
+
+  .divider { height: 1px; background: var(--border); margin: 20px 0; }
+
+  /* ── ACTIONS ── */
+  .form-actions { display: flex; gap: 10px; align-items: center; padding-top: 8px; border-top: 1px solid var(--border); margin-top: 4px; flex-wrap: wrap; }
+  .btn-submit { background: linear-gradient(135deg, var(--accent), #6b7fff); color: #fff; border: none; padding: 10px 28px; border-radius: 9px; font-family: 'Manrope', sans-serif; font-size: 14px; font-weight: 700; cursor: pointer; transition: all .15s; box-shadow: 0 3px 10px rgba(79,99,231,.3); display: inline-flex; align-items: center; gap: 7px; }
+  .btn-submit:hover { opacity: .9; transform: translateY(-1px); }
+  .btn-cancel { background: transparent; color: var(--text2); border: 1px solid var(--border2); padding: 10px 20px; border-radius: 9px; font-family: 'Manrope', sans-serif; font-size: 14px; font-weight: 600; text-decoration: none; transition: all .15s; display: inline-flex; align-items: center; gap: 6px; }
+  .btn-cancel:hover { background: var(--bg2); color: var(--text); }
+</style>
+
+<div class="ct-wrap">
+
+  <!-- ── PAGE HEADER ── -->
+  <div class="page-header">
+    <div>
+      <div class="page-title">
+        Перевод между счетами
+        <span class="page-badge">{{ hotel.name }}</span>
+      </div>
+      <div class="page-subtitle">Внутренний перевод — остатки изменятся мгновенно</div>
+    </div>
+    <button class="btn-back" onclick="history.back()">← Назад</button>
+  </div>
+
+  <!-- ── BALANCE CARDS ── -->
+  <div class="section-label">Текущие остатки</div>
+
+  <div class="balance-grid" id="balanceGrid"
+    data-cash="{{ register.cash_balance|default:'0' }}"
+    data-mkassa="{{ register.mkassa_balance|default:'0' }}"
+    data-zadatok="{{ register.zadatok_balance|default:'0' }}"
+    data-optima="{{ register.optima_balance|default:'0' }}"
+  >
+    <div class="bal-card" id="bal-cash" style="--card-top: linear-gradient(90deg,#16a34a,#22c55e);">
+      <div class="bal-card-label">💵 Наличные</div>
+      <div class="bal-card-value">{{ register.cash_balance }}</div>
+      <div class="bal-card-arrow" id="arr-cash"></div>
+    </div>
+    <div class="bal-card" id="bal-mkassa" style="--card-top: linear-gradient(90deg,#4f63e7,#818cf8);">
+      <div class="bal-card-label">📱 Банк1</div>
+      <div class="bal-card-value">{{ register.mkassa_balance }}</div>
+      <div class="bal-card-arrow" id="arr-mkassa"></div>
+    </div>
+    <div class="bal-card" id="bal-zadatok" style="--card-top: linear-gradient(90deg,#d97706,#f59e0b);">
+      <div class="bal-card-label">🔒 Задаток</div>
+      <div class="bal-card-value">{{ register.zadatok_balance }}</div>
+      <div class="bal-card-arrow" id="arr-zadatok"></div>
+    </div>
+    <div class="bal-card" id="bal-optima" style="--card-top: linear-gradient(90deg,#0891b2,#22d3ee);">
+      <div class="bal-card-label">🏦 Банк2</div>
+      <div class="bal-card-value">{{ register.optima_balance }}</div>
+      <div class="bal-card-arrow" id="arr-optima"></div>
+    </div>
+  </div>
+
+  <!-- ── TRANSFER VISUAL ── -->
+  <div class="section-label">Параметры перевода</div>
+
+  <div class="transfer-visual" id="transferVisual">
+    <div class="tv-account from" id="tv-from">
+      <div class="tv-account-label">Откуда</div>
+      <div class="tv-account-name" id="tv-from-name">—</div>
+      <div class="tv-account-bal"  id="tv-from-bal"></div>
+    </div>
+    <div class="tv-arrow">
+      <div class="tv-arrow-line">→</div>
+      <div class="tv-amount" id="tv-amount">0,00</div>
+    </div>
+    <div class="tv-account to" id="tv-to">
+      <div class="tv-account-label">Куда</div>
+      <div class="tv-account-name" id="tv-to-name">—</div>
+      <div class="tv-account-bal"  id="tv-to-bal"></div>
+    </div>
+  </div>
+
+  <!-- ── FORM ── -->
+  <div class="form-card">
+    <div class="form-card-header">
+      <div class="form-card-title"><span class="form-dot"></span> Детали перевода</div>
+    </div>
+    <div class="form-body">
+
+      {% if messages %}
+        {% for message in messages %}
+          <div class="alert-block {{ message.tags }}">{{ message }}</div>
+        {% endfor %}
+      {% endif %}
+
+      <form method="post" id="ctForm">
+        {% csrf_token %}
+
+        {% if form.non_field_errors %}
+          <div class="alert-block danger">{{ form.non_field_errors }}</div>
+        {% endif %}
+
+        <!-- ROW 1: Откуда + Куда -->
+        <div class="field-row field-row-2">
+          <div class="field-wrap">
+            <label class="field-label">{{ form.from_account.label }}</label>
+            {{ form.from_account }}
+            {% if form.from_account.errors %}<div class="field-error">{{ form.from_account.errors }}</div>{% endif %}
+          </div>
+          <div class="field-wrap">
+            <label class="field-label">{{ form.to_account.label }}</label>
+            {{ form.to_account }}
+            {% if form.to_account.errors %}<div class="field-error">{{ form.to_account.errors }}</div>{% endif %}
+          </div>
+        </div>
+
+        <!-- ROW 2: Сумма + Дата -->
+        <div class="field-row field-row-2">
+          <div class="field-wrap">
+            <label class="field-label">{{ form.amount.label }}</label>
+            {{ form.amount }}
+            {% if form.amount.errors %}<div class="field-error">{{ form.amount.errors }}</div>{% endif %}
+          </div>
+          <div class="field-wrap">
+            <label class="field-label">{{ form.happened_at.label }}</label>
+            {{ form.happened_at }}
+            {% if form.happened_at.errors %}<div class="field-error">{{ form.happened_at.errors }}</div>{% endif %}
+            <span class="field-hint">Если не указать — будет текущее время</span>
+          </div>
+        </div>
+
+        <div class="divider"></div>
+
+        <!-- ROW 3: Комментарий -->
+        <div class="field-row" style="grid-template-columns:1fr; margin-bottom:20px;">
+          <div class="field-wrap">
+            <label class="field-label">{{ form.comment.label }}</label>
+            {{ form.comment }}
+            {% if form.comment.errors %}<div class="field-error">{{ form.comment.errors }}</div>{% endif %}
+          </div>
+        </div>
+
+        <div class="form-actions">
+          <button type="submit" class="btn-submit">⇄ Сделать перевод</button>
+          <a class="btn-cancel" href="{% url 'dds:dds_dashboard' %}?hotel={{ hotel.id }}">К дашборду</a>
+        </div>
+      </form>
+
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  const grid     = document.getElementById("balanceGrid");
+  const form     = document.getElementById("ctForm");
+  if(!form) return;
+
+  const fromEl   = form.querySelector('[name="from_account"]');
+  const toEl     = form.querySelector('[name="to_account"]');
+  const amountEl = form.querySelector('[name="amount"]');
+
+  const labels = { cash:"Наличные", mkassa:"Банк1", zadatok:"Задаток", optima:"Банк2" };
+
+  function toNum(v){ v=(v??"0").toString().replace(",",".").trim(); const n=parseFloat(v); return isNaN(n)?0:n; }
+  function fmt(n){ return n.toLocaleString("ru-RU",{minimumFractionDigits:2,maximumFractionDigits:2}); }
+  function getBal(k){ return grid ? toNum(grid.dataset[k]||"0") : 0; }
+
+  function update(){
+    const from = fromEl ? fromEl.value : "";
+    const to   = toEl   ? toEl.value   : "";
+    const amt  = toNum(amountEl ? amountEl.value : "0");
+
+    // visual strip
+    const vfn = document.getElementById("tv-from-name"); if(vfn) vfn.textContent = labels[from]||"—";
+    const vtn = document.getElementById("tv-to-name");   if(vtn) vtn.textContent = labels[to]  ||"—";
+    const vfb = document.getElementById("tv-from-bal");  if(vfb) vfb.textContent = from ? fmt(getBal(from)) : "";
+    const vtb = document.getElementById("tv-to-bal");    if(vtb) vtb.textContent = to   ? fmt(getBal(to))   : "";
+    const va  = document.getElementById("tv-amount");    if(va)  va.textContent  = fmt(amt);
+
+    // balance card highlights + arrows
+    ["cash","mkassa","zadatok","optima"].forEach(k => {
+      const card = document.getElementById("bal-"+k);
+      const arr  = document.getElementById("arr-"+k);
+      if(!card || !arr) return;
+      card.classList.remove("highlight");
+      arr.textContent = "";
+      arr.className = "bal-card-arrow";
+      if(k === from && amt > 0){
+        card.classList.add("highlight");
+        const after = getBal(k) - amt;
+        arr.textContent = "→ После: " + fmt(after);
+        arr.className = "bal-card-arrow from";
+      } else if(k === to && amt > 0){
+        card.classList.add("highlight");
+        const after = getBal(k) + amt;
+        arr.textContent = "→ После: " + fmt(after);
+        arr.className = "bal-card-arrow to";
+      }
+    });
+  }
+
+  if(fromEl)   fromEl.addEventListener("change", update);
+  if(toEl)     toEl.addEventListener("change",   update);
+  if(amountEl) amountEl.addEventListener("input", update);
+  update();
+})();
+</script>
+
+{% endblock %}

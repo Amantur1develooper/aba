@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+{% block title %}Бухгалтерия — Акча{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <div>
+    <h1 class="h4 mb-0">Бухгалтерия</h1>
+    <div class="text-muted small">Расходы и инкассации по всем точкам</div>
+  </div>
+  <a class="btn btn-outline-success"
+     href="{% url 'dds:accounting_excel' %}?hotel={{ selected_hotel }}&date_from={{ date_from|date:'Y-m-d' }}&date_to={{ date_to|date:'Y-m-d' }}">
+    Excel
+  </a>
+</div>
+
+<form class="row g-2 mb-3">
+  <div class="col-md-4">
+    <select class="form-select" name="hotel">
+      <option value="">Все точки</option>
+      {% for h in hotels %}
+        <option value="{{ h.id }}" {% if selected_hotel == h.id|stringformat:"s" %}selected{% endif %}>{{ h.name }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="col-md-3"><input type="date" class="form-control" name="date_from" value="{{ date_from|date:'Y-m-d' }}"></div>
+  <div class="col-md-3"><input type="date" class="form-control" name="date_to" value="{{ date_to|date:'Y-m-d' }}"></div>
+  <div class="col-md-2 d-grid"><button class="btn btn-dark">Показать</button></div>
+</form>
+
+<div class="row g-2 mb-3">
+  <div class="col-md-6"><div class="card app-card"><div class="card-body">Расходы (без инкассации): <b>{{ expense_total }}</b></div></div></div>
+  <div class="col-md-6"><div class="card app-card"><div class="card-body">Инкассации: <b>{{ incasso_total }}</b></div></div></div>
+</div>
+
+<div class="row g-3">
+  <div class="col-lg-7">
+    <div class="card app-card">
+      <div class="card-body">
+        <h2 class="h6 mb-2">Расходы</h2>
+        <div class="table-responsive">
+          <table class="table table-sm align-middle">
+            <thead><tr><th>Дата</th><th>Точка</th><th>Статья</th><th class="text-end">Сумма</th></tr></thead>
+            <tbody>
+              {% for op in expenses %}
+                <tr>
+                  <td>{{ op.happened_at|date:"d.m.Y H:i" }}</td>
+                  <td>{{ op.hotel.name }}</td>
+                  <td>{{ op.article.name }}</td>
+                  <td class="text-end"><b>{{ op.amount }}</b></td>
+                </tr>
+              {% empty %}
+                <tr><td colspan="4" class="text-muted">Нет расходов</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-5">
+    <div class="card app-card">
+      <div class="card-body">
+        <h2 class="h6 mb-2">Инкассации</h2>
+        <div class="table-responsive">
+          <table class="table table-sm align-middle">
+            <thead><tr><th>Дата</th><th>Точка</th><th class="text-end">Сумма</th></tr></thead>
+            <tbody>
+              {% for i in incassos %}
+                <tr>
+                  <td>{{ i.happened_at|date:"d.m.Y H:i" }}</td>
+                  <td>{{ i.hotel.name }}</td>
+                  <td class="text-end"><b>{{ i.amount }}</b></td>
+                </tr>
+              {% empty %}
+                <tr><td colspan="3" class="text-muted">Нет инкассаций</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <div>
+    <h1 class="h4 mb-0">Перевод между счетами</h1>
+    <div class="text-muted small">Точка: <b>{{ hotel.name }}</b></div>
+  </div>
+  <a class="btn btn-sm btn-outline-secondary" href="javascript:history.back()">← Назад</a>
+</div>
+<div class="row g-2 mb-3">
+  <div class="col-md-3"><div class="card"><div class="card-body p-2">
+    <div class="text-muted small">Наличные</div>
+    <b>{{ register.cash_balance }}</b>
+  </div></div></div>
+
+  <div class="col-md-3"><div class="card"><div class="card-body p-2">
+    <div class="text-muted small">Банк1</div>
+    <b>{{ register.mkassa_balance }}</b>
+  </div></div></div>
+
+  <div class="col-md-3"><div class="card"><div class="card-body p-2">
+    <div class="text-muted small">Задаток</div>
+    <b>{{ register.zadatok_balance }}</b>
+  </div></div></div>
+
+  <div class="col-md-3"><div class="card"><div class="card-body p-2">
+    <div class="text-muted small">Банк2</div>
+    <b>{{ register.optima_balance }}</b>
+  </div></div></div>
+</div>
+                                    
+<div class="card">
+  <div class="card-body">
+
+    {% if messages %}
+      {% for message in messages %}
+        <div class="alert alert-{{ message.tags }} mb-2">{{ message }}</div>
+      {% endfor %}
+    {% endif %}
+
+    <form method="post" class="row g-3">
+      {% csrf_token %}
+
+      {% if form.non_field_errors %}
+        <div class="col-12">
+          <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+        </div>
+      {% endif %}
+
+      <div class="col-md-6">
+        <label class="form-label">{{ form.from_account.label }}</label>
+        {{ form.from_account }}
+        {% if form.from_account.errors %}<div class="text-danger small">{{ form.from_account.errors }}</div>{% endif %}
+      </div>
+
+      <div class="col-md-6">
+        <label class="form-label">{{ form.to_account.label }}</label>
+        {{ form.to_account }}
+        {% if form.to_account.errors %}<div class="text-danger small">{{ form.to_account.errors }}</div>{% endif %}
+      </div>
+
+      <div class="col-md-4">
+        <label class="form-label">{{ form.amount.label }}</label>
+        {{ form.amount }}
+        {% if form.amount.errors %}<div class="text-danger small">{{ form.amount.errors }}</div>{% endif %}
+      </div>
+
+      <div class="col-md-4">
+        <label class="form-label">{{ form.happened_at.label }}</label>
+        {{ form.happened_at }}
+        {% if form.happened_at.errors %}<div class="text-danger small">{{ form.happened_at.errors }}</div>{% endif %}
+        <div class="text-muted small">Если не указать — будет текущее время.</div>
+      </div>
+
+      <div class="col-md-12">
+        <label class="form-label">{{ form.comment.label }}</label>
+        {{ form.comment }}
+        {% if form.comment.errors %}<div class="text-danger small">{{ form.comment.errors }}</div>{% endif %}
+      </div>
+
+      <div class="col-12 d-flex gap-2">
+        <button class="btn btn-primary">Сделать перевод</button>
+        <a class="btn btn-outline-secondary" href="{% url 'dds:dds_dashboard' %}?hotel={{ hotel.id }}">К дашборду</a>
+      </div>
+    </form>
+
+  </div>
+</div>
+
+{% endblock %}

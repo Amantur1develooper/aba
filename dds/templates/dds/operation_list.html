@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h1 class="h4 mb-0">ДДС — Реестр</h1>
+  <a class="btn btn-primary" href="{% url 'dds:dds_create' %}">+ Операция</a>
+</div>
+
+<form class="row g-2 mb-3">
+  <div class="col-md-3">
+    <select class="form-select" name="hotel">
+      <option value="">Все точки</option>
+      {% for h in hotels %}
+        <option value="{{ h.id }}" {% if filters.hotel == h.id|stringformat:"s" %}selected{% endif %}>{{ h.name }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="col-md-2">
+    <select class="form-select" name="kind">
+      <option value="">Все</option>
+      <option value="income" {% if filters.kind == "income" %}selected{% endif %}>Доход</option>
+      <option value="expense" {% if filters.kind == "expense" %}selected{% endif %}>Расход</option>
+    </select>
+  </div>
+  <div class="col-md-3">
+    <select class="form-select" name="article">
+      <option value="">Все статьи</option>
+      {% for a in articles %}
+        <option value="{{ a.id }}" {% if filters.article == a.id|stringformat:"s" %}selected{% endif %}>
+          {{ a.get_kind_display }} — {{ a.name }}
+        </option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="col-md-2">
+    <input type="date" class="form-control" name="date_from" value="{{ filters.date_from|date:'Y-m-d' }}">
+  </div>
+  <div class="col-md-2">
+    <input type="date" class="form-control" name="date_to" value="{{ filters.date_to|date:'Y-m-d' }}">
+  </div>
+  <div class="col-12 d-grid">
+    <button class="btn btn-dark">Фильтр</button>
+  </div>
+</form>
+
+<div class="table-responsive">
+  <table class="table table-sm align-middle">
+    <thead>
+      <tr>
+        <th>Дата</th><th>Точка</th><th>Статья</th><th>Метод</th>
+        <th class="text-end">Сумма</th><th>Комментарий</th><th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for op in ops %}
+        <tr class="{% if op.is_voided %}text-muted{% endif %}">
+          <td>{{ op.happened_at|date:"d.m.Y H:i" }}</td>
+          <td>{{ op.hotel.name }}</td>
+          <td>{{ op.article.get_kind_display }} — {{ op.article.name }}</td>
+          <td>{{ op.get_method_display }}</td>
+          <td class="text-end">{{ op.amount }}</td>
+          <td>{{ op.comment|default:"—" }}</td>
+          <td class="text-end">
+            {% if not op.is_voided %}
+              <a class="btn btn-sm btn-outline-danger" href="{% url 'dds:dds_void' op.id %}">Сторно</a>
+            {% else %}
+              <span class="badge bg-secondary">Отменено</span>
+            {% endif %}
+          </td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="7" class="text-muted">Нет операций</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

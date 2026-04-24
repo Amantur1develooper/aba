@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h1 class="h5 mb-0">Перевод между счетами — {{ hotel.name }}</h1>
+  <a class="btn btn-sm btn-outline-secondary" href="{% url 'pms:board' %}?hotel={{ hotel.id }}">← Назад</a>
+</div>
+
+<form method="post" class="card">
+  <div class="card-body">
+    {% csrf_token %}
+    {{ form.non_field_errors }}
+
+    <div class="row g-2">
+      <div class="col-md-4">{{ form.from_account.label_tag }}{{ form.from_account }}</div>
+      <div class="col-md-4">{{ form.to_account.label_tag }}{{ form.to_account }}</div>
+      <div class="col-md-4">{{ form.amount.label_tag }}{{ form.amount }}</div>
+      <div class="col-md-6 mt-2">{{ form.happened_at.label_tag }}{{ form.happened_at }}</div>
+      <div class="col-md-6 mt-2">{{ form.comment.label_tag }}{{ form.comment }}</div>
+    </div>
+
+    <button class="btn btn-primary mt-3">Сделать перевод</button>
+  </div>
+</form>
+{% endblock %}

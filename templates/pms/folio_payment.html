@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <div>
+    <h1 class="h5 mb-1">Оплата фолио</h1>
+    <div class="text-muted small">{{ folio.hotel.name }} • {{ folio.company.name }}</div>
+  </div>
+  <a class="btn btn-sm btn-outline-secondary" href="{% url 'pms:folio_detail' folio.id %}">← Назад</a>
+</div>
+
+<div class="card mb-3">
+  <div class="card-body">
+    <div class="text-muted small">Текущий баланс</div>
+    <div class="fs-3"><b>{{ balance }}</b></div>
+  </div>
+</div>
+
+<form method="post" class="card">
+  <div class="card-body">
+    {% csrf_token %}
+    <div class="row g-2">
+      <div class="col-lg-3">{{ form.pay_amount.label_tag }} {{ form.pay_amount }}</div>
+      <div class="col-lg-3">{{ form.method.label_tag }} {{ form.method }}</div>
+      <div class="col-lg-3">{{ form.article.label_tag }} {{ form.article }}</div>
+      <div class="col-12">{{ form.comment.label_tag }} {{ form.comment }}</div>
+    </div>
+
+    {% if form.errors %}
+      <div class="alert alert-danger mt-3">{{ form.errors }}</div>
+    {% endif %}
+  </div>
+  <div class="card-footer d-flex justify-content-end gap-2">
+    <a class="btn btn-outline-secondary" href="{% url 'pms:folio_detail' folio.id %}">Отмена</a>
+    <button class="btn btn-success">Провести оплату</button>
+  </div>
+</form>
+
+{% endblock %}

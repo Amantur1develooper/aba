@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}Вход — Акча{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-md-4">
+    <div class="card app-card">
+      <div class="card-body">
+        <h1 class="h5 mb-3">Вход</h1>
+
+        {% if form.errors %}
+          <div class="alert alert-danger">Неверный логин или пароль.</div>
+        {% endif %}
+
+        <form method="post">
+          {% csrf_token %}
+          <div class="mb-2">
+            <label class="form-label">Логин</label>
+            <input class="form-control" name="username" autofocus required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Пароль</label>
+            <input class="form-control" type="password" name="password" required>
+          </div>
+          <button class="btn btn-dark w-100">Войти</button>
+        </form>
+
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

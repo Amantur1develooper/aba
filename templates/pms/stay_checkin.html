@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h1 class="h5 mb-0">Заезд</h1>
+  <a class="btn btn-sm btn-outline-secondary" href="{% url 'pms:board' %}?hotel={{ stay.hotel_id }}">← Назад</a>
+</div>
+
+<div class="card mb-3">
+  <div class="card-body">
+    <div><b>Точка:</b> {{ stay.hotel }}</div>
+    <div><b>Номер:</b> {{ stay.room.number }}</div>
+    <div>
+      <b>Клиент:</b>
+      {% if stay.company %}{{ stay.company.name }}{% else %}{{ stay.guest_name|default:"(без имени)" }}{% endif %}
+    </div>
+    <div><b>Период:</b> {{ stay.check_in|date:"d.m.Y H:i" }} → {{ stay.check_out|date:"d.m.Y H:i" }}</div>
+    <div><b>К оплате:</b> {{ stay.total_to_pay }}</div>
+  </div>
+</div>
+
+<form method="post" class="card">
+  <div class="card-body">
+    {% csrf_token %}
+
+    {% if form.non_field_errors %}
+      <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+    {% endif %}
+
+    <div class="row g-2">
+      <div class="col-lg-3">
+        <div class="form-check mt-4">
+          {{ form.pay_now }}
+          <label class="form-check-label" for="id_pay_now">{{ form.pay_now.label }}</label>
+        </div>
+        <div class="text-muted small">
+          Для корпоративных можно снять галочку → уйдёт в фолио (без денег).
+        </div>
+      </div>
+
+      <div class="col-lg-3">
+        {{ form.method.label_tag }}
+        {{ form.method }}
+      </div>
+
+      <div class="col-lg-3">
+        {{ form.paid_amount.label_tag }}
+        {{ form.paid_amount }}
+        <div class="text-muted small">Пусто = оплатить всю сумму.</div>
+      </div>
+
+      <div class="col-lg-3">
+        {{ form.article.label_tag }}
+        {{ form.article }}
+        <div class="text-muted small">Можно оставить пустым — возьмём дефолтную статью.</div>
+      </div>
+    </div>
+
+    {% for field in form %}
+      {% if field.errors %}
+        <div class="text-danger small mt-1">{{ field.label }}: {{ field.errors|striptags }}</div>
+      {% endif %}
+    {% endfor %}
+  </div>
+
+  <div class="card-footer d-flex justify-content-end gap-2">
+    <a class="btn btn-outline-secondary" href="{% url 'pms:board' %}?hotel={{ stay.hotel_id }}">Отмена</a>
+    <button class="btn btn-success">Заселить</button>
+  </div>
+</form>
+
+<script>
+  // Если pay_now=false — отключаем поля оплаты (визуально)
+  (function(){
+    const payNow = document.getElementById("id_pay_now");
+    const method = document.getElementById("id_method");
+    const paid = document.getElementById("id_paid_amount");
+    const article = document.getElementById("id_article");
+
+    function sync(){
+      const enabled = payNow && payNow.checked;
+      [method, paid, article].forEach(el => {
+        if (!el) return;
+        el.disabled = !enabled;
+      });
+      if (!enabled && paid) paid.value = "";
+      if (!enabled && article) article.value = "";
+    }
+    if (payNow) payNow.addEventListener("change", sync);
+    sync();
+  })();
+</script>
+
+{% endblock %}

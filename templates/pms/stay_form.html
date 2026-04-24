@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h1 class="h5 mb-0">
+    {% if stay %}Редактирование{% else %}Новая бронь/проживание{% endif %}
+  </h1>
+  <a class="btn btn-sm btn-outline-secondary" href="{% url 'pms:board' %}">← Назад</a>
+</div>
+
+<form method="post" class="card">
+  <div class="card-body">
+    {% csrf_token %}
+
+    {% if form.non_field_errors %}
+      <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+    {% endif %}
+
+    <div class="row g-2">
+      <div class="col-lg-3">{{ form.hotel.label_tag }} {{ form.hotel }}</div>
+      <div class="col-lg-3">{{ form.room.label_tag }} {{ form.room }}</div>
+      <div class="col-lg-3">{{ form.status.label_tag }} {{ form.status }}</div>
+      <div class="col-lg-3">{{ form.channel.label_tag }} {{ form.channel }}</div>
+
+      <div class="col-lg-3">{{ form.stay_type.label_tag }} {{ form.stay_type }}</div>
+      <div class="col-lg-3">{{ form.company.label_tag }} {{ form.company }}</div>
+
+      <div class="col-lg-3">{{ form.guest_name.label_tag }} {{ form.guest_name }}</div>
+      <div class="col-lg-3">{{ form.guest_phone.label_tag }} {{ form.guest_phone }}</div>
+
+      <div class="col-lg-3">{{ form.check_in.label_tag }} {{ form.check_in }}</div>
+      <div class="col-lg-3">{{ form.check_out.label_tag }} {{ form.check_out }}</div>
+      <div class="col-lg-3">{{ form.guests_count.label_tag }} {{ form.guests_count }}</div>
+      <div class="col-lg-3">{{ form.tourist_tax_total.label_tag }} {{ form.tourist_tax_total }}</div>
+
+      <div class="col-lg-3">{{ form.amount.label_tag }} {{ form.amount }}</div>
+      <div class="col-lg-3">{{ form.discount.label_tag }} {{ form.discount }}</div>
+
+      <div class="col-12">{{ form.comment.label_tag }} {{ form.comment }}</div>
+    </div>
+
+    {% for field in form %}
+      {% if field.errors %}
+        <div class="text-danger small mt-1">{{ field.label }}: {{ field.errors|striptags }}</div>
+      {% endif %}
+    {% endfor %}
+  </div>
+
+  <div class="card-footer d-flex justify-content-end gap-2">
+    <a class="btn btn-outline-secondary" href="{% url 'pms:board' %}">Отмена</a>
+    <button class="btn btn-primary">Сохранить</button>
+  </div>
+</form>
+
+<script>
+  // Небольшая подсказка: если stay_type не corporate — можно визуально отключать company (не обязательно)
+  (function(){
+    const stayType = document.getElementById("id_stay_type");
+    const company = document.getElementById("id_company");
+    if (!stayType || !company) return;
+
+    function sync(){
+      const isCorp = stayType.value === "corporate";
+      company.disabled = !isCorp;
+      if (!isCorp) company.value = "";
+    }
+    stayType.addEventListener("change", sync);
+    sync();
+  })();
+</script>
+
+{% endblock %}

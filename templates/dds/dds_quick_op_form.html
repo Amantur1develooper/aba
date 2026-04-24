@@ -1,0 +1,304 @@
+{% extends "base.html" %}
+{% block title %}
+  {% if kind == "income" %}Доход{% else %}Расход{% endif %} — {{ hotel.name }}
+{% endblock %}
+
+{% block content %}
+
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
+
+  :root {
+    --bg: #f4f6fb;
+    --bg2: #edf0f7;
+    --bg3: #e8ecf4;
+    --surface: #ffffff;
+    --border: rgba(0,0,0,0.08);
+    --border2: rgba(0,0,0,0.14);
+    --accent: #4f63e7;
+    --accent2: #16a34a;
+    --accent4: #e11d48;
+    --text: #111827;
+    --text2: #6b7280;
+    --text3: #9ca3af;
+    --gold: #d97706;
+    --warn: #f59e0b;
+    --mono: 'JetBrains Mono', monospace;
+  }
+
+  * { box-sizing: border-box; }
+  body { background: var(--bg) !important; color: var(--text) !important; font-family: 'Manrope', sans-serif !important; }
+
+  .qop-wrap { max-width: 900px; margin: 0 auto; padding: 28px 20px 60px; }
+
+  /* ── PAGE HEADER ── */
+  .page-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 28px; flex-wrap: wrap; }
+  .page-title  { font-size: 22px; font-weight: 800; letter-spacing: -0.4px; color: var(--text); display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .page-badge-income  { display: inline-block; background: rgba(22,163,74,.12); color: var(--accent2); border: 1px solid rgba(22,163,74,.25); font-size: 10px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; padding: 3px 9px; border-radius: 5px; }
+  .page-badge-expense { display: inline-block; background: rgba(225,29,72,.1);  color: var(--accent4); border: 1px solid rgba(225,29,72,.22); font-size: 10px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; padding: 3px 9px; border-radius: 5px; }
+  .page-subtitle { font-size: 12px; color: var(--text2); margin-top: 5px; }
+
+  .btn-back { background: var(--surface); color: var(--text2); border: 1px solid var(--border2); padding: 8px 16px; border-radius: 8px; font-family: 'Manrope', sans-serif; font-size: 13px; font-weight: 600; text-decoration: none; transition: all .15s; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 1px 3px rgba(0,0,0,0.06); white-space: nowrap; }
+  .btn-back:hover { background: var(--bg2); color: var(--text); }
+
+  /* ── SECTION LABEL ── */
+  .section-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; color: var(--text3); margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+  .section-label::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+  /* ── BALANCES BAR ── */
+  .balances-bar {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 14px 20px;
+    margin-bottom: 22px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+  }
+  .bal-chip { display: inline-flex; flex-direction: column; align-items: flex-start; background: var(--bg2); border: 1px solid var(--border2); border-radius: 8px; padding: 6px 12px; min-width: 100px; }
+  .bal-chip-label { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--text3); }
+  .bal-chip-value { font-family: var(--mono); font-size: 14px; font-weight: 700; color: var(--text); margin-top: 2px; }
+  .bal-chip.cash    { border-top: 2px solid var(--accent2); }
+  .bal-chip.mkassa  { border-top: 2px solid var(--accent); }
+  .bal-chip.zadatok { border-top: 2px solid var(--gold); }
+  .bal-chip.optima  { border-top: 2px solid #0891b2; }
+  .bal-total-chip { display: inline-flex; align-items: center; gap: 8px; margin-left: auto; font-size: 13px; font-weight: 700; color: var(--text2); }
+  .bal-total-val  { font-family: var(--mono); font-size: 16px; font-weight: 800; color: var(--accent); }
+
+  /* ── STEP 1 — CATEGORY ── */
+  .step-card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; box-shadow: 0 1px 6px rgba(0,0,0,0.07); overflow: hidden; margin-bottom: 14px; }
+  .step-card-header { padding: 14px 20px; border-bottom: 1px solid var(--border); background: var(--bg2); display: flex; align-items: center; gap: 10px; }
+  .step-num { width: 22px; height: 22px; border-radius: 50%; background: var(--accent); color: #fff; font-size: 11px; font-weight: 800; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .step-num.done { background: var(--accent2); }
+  .step-title { font-size: 13px; font-weight: 700; color: var(--text); }
+  .step-hint  { font-size: 11px; color: var(--text2); margin-left: auto; }
+  .step-body  { padding: 20px 22px; }
+
+  /* ── DJANGO WIDGET OVERRIDES ── */
+  .qop-wrap select,
+  .qop-wrap input[type="text"],
+  .qop-wrap input[type="number"],
+  .qop-wrap input[type="date"],
+  .qop-wrap input[type="datetime-local"],
+  .qop-wrap textarea {
+    width: 100%; background: var(--bg2) !important; border: 1px solid var(--border2) !important;
+    border-radius: 9px !important; padding: 10px 14px !important; font-family: 'Manrope', sans-serif !important;
+    font-size: 14px !important; color: var(--text) !important; outline: none !important;
+    transition: border-color .15s, box-shadow .15s !important; box-shadow: none !important;
+  }
+  .qop-wrap select:focus, .qop-wrap input:focus, .qop-wrap textarea:focus {
+    border-color: var(--accent) !important; box-shadow: 0 0 0 3px rgba(79,99,231,.12) !important; background: var(--surface) !important;
+  }
+  .qop-wrap textarea { resize: vertical; min-height: 78px; }
+
+  /* ── FIELD ROWS ── */
+  .field-row   { display: grid; gap: 16px; margin-bottom: 16px; }
+  .field-row-2 { grid-template-columns: 1fr 1fr; }
+  .field-row-3 { grid-template-columns: 1fr 1fr 1fr; }
+  .field-row-4 { grid-template-columns: 1fr 1fr 1fr 1fr; }
+  @media (max-width: 700px) { .field-row-2, .field-row-3, .field-row-4 { grid-template-columns: 1fr; } }
+  .field-wrap  { display: flex; flex-direction: column; gap: 6px; }
+  .field-label { font-size: 12px; font-weight: 700; color: var(--text2); text-transform: uppercase; letter-spacing: .8px; }
+  .field-hint  { font-size: 11px; color: var(--text3); font-style: italic; margin-top: 2px; }
+  .field-error { font-size: 11px; color: var(--accent4); font-weight: 600; margin-top: 3px; }
+
+  /* ── ERROR BLOCK ── */
+  .error-block { background: rgba(225,29,72,.07); border: 1px solid rgba(225,29,72,.2); border-radius: 10px; padding: 12px 16px; margin-bottom: 16px; font-size: 13px; color: var(--accent4); font-weight: 600; }
+
+  .divider { height: 1px; background: var(--border); margin: 18px 0; }
+
+  /* ── CATEGORY CHOSEN CHIP ── */
+  .category-chosen { display: inline-flex; align-items: center; gap: 7px; background: rgba(79,99,231,.1); border: 1px solid rgba(79,99,231,.2); border-radius: 8px; padding: 6px 12px; font-size: 13px; font-weight: 700; color: var(--accent); }
+  .category-chosen .tick { font-size: 14px; color: var(--accent2); }
+
+  /* ── ACTIONS ── */
+  .form-actions { display: flex; gap: 10px; align-items: center; padding-top: 8px; border-top: 1px solid var(--border); margin-top: 4px; flex-wrap: wrap; }
+  .btn-submit-income  { background: linear-gradient(135deg, var(--accent2), #22c55e); color: #fff; border: none; padding: 10px 28px; border-radius: 9px; font-family: 'Manrope', sans-serif; font-size: 14px; font-weight: 700; cursor: pointer; transition: all .15s; box-shadow: 0 3px 10px rgba(22,163,74,.3); display: inline-flex; align-items: center; gap: 7px; }
+  .btn-submit-income:hover  { opacity: .9; transform: translateY(-1px); }
+  .btn-submit-income:disabled  { opacity: .45; cursor: not-allowed; transform: none; }
+  .btn-submit-expense { background: linear-gradient(135deg, var(--accent4), #f43f5e); color: #fff; border: none; padding: 10px 28px; border-radius: 9px; font-family: 'Manrope', sans-serif; font-size: 14px; font-weight: 700; cursor: pointer; transition: all .15s; box-shadow: 0 3px 10px rgba(225,29,72,.3); display: inline-flex; align-items: center; gap: 7px; }
+  .btn-submit-expense:hover  { opacity: .9; transform: translateY(-1px); }
+  .btn-submit-expense:disabled { opacity: .45; cursor: not-allowed; transform: none; }
+  .btn-cancel { background: transparent; color: var(--text2); border: 1px solid var(--border2); padding: 10px 20px; border-radius: 9px; font-family: 'Manrope', sans-serif; font-size: 14px; font-weight: 600; text-decoration: none; transition: all .15s; display: inline-flex; align-items: center; gap: 6px; }
+  .btn-cancel:hover { background: var(--bg2); color: var(--text); }
+  .btn-disabled-hint { font-size: 11px; color: var(--text3); font-style: italic; margin-left: 4px; }
+</style>
+
+<div class="qop-wrap">
+
+  <!-- ── PAGE HEADER ── -->
+  <div class="page-header">
+    <div>
+      <div class="page-title">
+        {% if kind == "income" %}
+          Добавить доход
+          <span class="page-badge-income">↑ Доход</span>
+        {% else %}
+          Добавить расход
+          <span class="page-badge-expense">↓ Расход</span>
+        {% endif %}
+        <span style="font-size:16px; font-weight:600; color:var(--text2);">— {{ hotel.name }}</span>
+      </div>
+      <div class="page-subtitle">Шаг 1: выберите категорию → Шаг 2: заполните данные</div>
+    </div>
+    <a class="btn-back" href="{% url 'dds:hotel_detail' hotel.id %}">← В точка</a>
+  </div>
+
+  <!-- ── BALANCE BAR ── -->
+  {% if register %}
+  <div class="balances-bar">
+    <div class="bal-chip cash">
+      <span class="bal-chip-label">💵 Наличные</span>
+      <span class="bal-chip-value">{{ register.cash_balance|floatformat:2 }}</span>
+    </div>
+    <div class="bal-chip mkassa">
+      <span class="bal-chip-label">📱 Банк1</span>
+      <span class="bal-chip-value">{{ register.mkassa_balance|floatformat:2 }}</span>
+    </div>
+    <div class="bal-chip zadatok">
+      <span class="bal-chip-label">🔒 Задаток</span>
+      <span class="bal-chip-value">{{ register.zadatok_balance|floatformat:2 }}</span>
+    </div>
+    <div class="bal-chip optima">
+      <span class="bal-chip-label">🏦 Банк2</span>
+      <span class="bal-chip-value">{{ register.optima_balance|floatformat:2 }}</span>
+    </div>
+    <div class="bal-total-chip">
+      Итого: <span class="bal-total-val">{{ register.total|floatformat:2 }}</span>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- ── STEP 1: КАТЕГОРИЯ ── -->
+  <div class="step-card">
+    <div class="step-card-header">
+      <span class="step-num {% if category_id %}done{% endif %}">{% if category_id %}✓{% else %}1{% endif %}</span>
+      <span class="step-title">Выбор категории</span>
+      {% if category_id %}
+        <span class="step-hint">Выбрана категория — можно переключить</span>
+      {% else %}
+        <span class="step-hint">Обязательно выберите категорию</span>
+      {% endif %}
+    </div>
+    <div class="step-body">
+      <form method="get">
+        <div class="field-row field-row-2">
+          <div class="field-wrap">
+            <label class="field-label">Категория</label>
+            <select name="category" onchange="this.form.submit()">
+              <option value="">— выберите категорию —</option>
+              {% for c in form.fields.category.queryset %}
+                <option value="{{ c.id }}" {% if category_id|stringformat:"s" == c.id|stringformat:"s" %}selected{% endif %}>
+                  {% if c.parent %}{{ c.parent.name }} → {% endif %}{{ c.name }}
+                </option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="field-wrap" style="justify-content:flex-end; padding-bottom:2px;">
+            {% if category_id %}
+              <div class="category-chosen">
+                <span class="tick">✓</span>
+                Категория выбрана — перейдите к форме ниже
+              </div>
+            {% else %}
+              <div class="field-hint" style="font-size:12px; margin-top:auto;">
+                После выбора категории страница обновится и покажет статьи этой категории
+              </div>
+            {% endif %}
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ── STEP 2: ФОРМА ── -->
+  <div class="step-card">
+    <div class="step-card-header">
+      <span class="step-num" style="{% if not category_id %}background:var(--text3);{% endif %}">2</span>
+      <span class="step-title">
+        {% if kind == "income" %}Данные дохода{% else %}Данные расхода{% endif %}
+      </span>
+      {% if not category_id %}
+        <span class="step-hint" style="color:var(--accent4);">Сначала выберите категорию выше</span>
+      {% endif %}
+    </div>
+    <div class="step-body">
+      <form method="post">
+        {% csrf_token %}
+        <input type="hidden" name="category" value="{{ category_id }}">
+
+        {% if form.non_field_errors %}
+          <div class="error-block">{{ form.non_field_errors }}</div>
+        {% endif %}
+
+        <!-- ROW 1: Статья + Сумма + Способ оплаты -->
+        <div class="field-row field-row-3">
+          <div class="field-wrap">
+            <label class="field-label">Статья</label>
+            {{ form.article }}
+            {% if form.article.errors %}<div class="field-error">{{ form.article.errors }}</div>{% endif %}
+            {% if not category_id %}<div class="field-hint">Сначала выберите категорию</div>{% endif %}
+          </div>
+          <div class="field-wrap">
+            <label class="field-label">Сумма</label>
+            {{ form.amount }}
+            {% if form.amount.errors %}<div class="field-error">{{ form.amount.errors }}</div>{% endif %}
+          </div>
+          <div class="field-wrap">
+            <label class="field-label">Способ оплаты</label>
+            {{ form.method }}
+            {% if form.method.errors %}<div class="field-error">{{ form.method.errors }}</div>{% endif %}
+          </div>
+        </div>
+
+        <!-- ROW 2: Дата + Контрагент -->
+        <div class="field-row field-row-2">
+          <div class="field-wrap">
+            <label class="field-label">Дата / время</label>
+            {{ form.happened_at }}
+            {% if form.happened_at.errors %}<div class="field-error">{{ form.happened_at.errors }}</div>{% endif %}
+          </div>
+          <div class="field-wrap">
+            <label class="field-label">Поставщик / гость / компания</label>
+            {{ form.counterparty }}
+            {% if form.counterparty.errors %}<div class="field-error">{{ form.counterparty.errors }}</div>{% endif %}
+          </div>
+        </div>
+
+        <div class="divider"></div>
+
+        <!-- ROW 3: Комментарий -->
+        <div class="field-row" style="grid-template-columns:1fr; margin-bottom:20px;">
+          <div class="field-wrap">
+            <label class="field-label">Комментарий</label>
+            {{ form.comment }}
+            {% if form.comment.errors %}<div class="field-error">{{ form.comment.errors }}</div>{% endif %}
+          </div>
+        </div>
+
+        <div class="form-actions">
+          {% if kind == "income" %}
+            <button type="submit" class="btn-submit-income" {% if not category_id %}disabled{% endif %}>
+              ✓ Сохранить доход
+            </button>
+          {% else %}
+            <button type="submit" class="btn-submit-expense" {% if not category_id %}disabled{% endif %}>
+              ✓ Сохранить расход
+            </button>
+          {% endif %}
+          <a class="btn-cancel" href="{% url 'dds:hotel_detail' hotel.id %}">Отмена</a>
+          {% if not category_id %}
+            <span class="btn-disabled-hint">↑ Выберите категорию в шаге 1</span>
+          {% endif %}
+        </div>
+
+      </form>
+    </div>
+  </div>
+
+</div>
+
+{% endblock %}

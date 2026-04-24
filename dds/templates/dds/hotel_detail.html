@@ -1,0 +1,303 @@
+{% extends "base.html" %}
+{% block title %}{{ hotel.name }} — Акча{% endblock %}
+
+{% block content %}
+
+<form class="row g-2 mb-3">
+  <div class="col-md-4">
+    <input type="date" class="form-control" name="date_from" value="{{ date_from|date:'Y-m-d' }}">
+  </div>
+  <div class="col-md-4">
+    <input type="date" class="form-control" name="date_to" value="{{ date_to|date:'Y-m-d' }}">
+  </div>
+  <div class="col-md-2 d-grid">
+    <button class="btn btn-dark">Показать</button>
+  </div>
+  <div class="col-md-2 d-grid">
+    <a class="btn btn-outline-success"
+       href="{% url 'dds:hotel_export_excel' hotel.id %}?date_from={{ date_from|date:'Y-m-d' }}&date_to={{ date_to|date:'Y-m-d' }}">
+      Excel
+    </a>
+  </div>
+</form>
+<a class="btn btn-outline-primary"
+   href="{% url 'dds:cash_transfer_create' hotel.id %}">
+  Перевод между счетами
+</a>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <div>
+    <h1 class="h4 mb-0">{{ hotel.name }}</h1>
+    <div class="text-muted small">Касса (нал/безнал) и ДДС по точке</div>
+  </div>
+  <div class="d-flex gap-2">
+   
+
+    <a class="btn btn-outline-secondary" href="{% url 'dds:hotel_list' %}">← Точки</a>
+    <a class="btn btn-outline-dark" href="{% url 'dds:incasso_create' hotel.id %}">Инкассация</a>
+     <a class="btn btn-sm btn-primary" href="{% url 'dds:income_add' hotel.id %}">+ Доход</a>
+<a class="btn btn-sm btn-danger" href="{% url 'dds:expense_add' hotel.id %}">+ Расход</a>
+    {% comment %} <a class="btn btn-primary" href="{% url 'dds:dds_create' %}">+ Операция</a> {% endcomment %}
+  </div>
+</div>
+
+<!-- Контакты точки -->
+<div class="card app-card mb-3">
+  <div class="card-body">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <h2 class="h6 mb-0">Контакты</h2>
+      <button class="btn btn-sm btn-outline-primary" type="button" data-bs-toggle="collapse" data-bs-target="#addContactForm">
+        + Добавить
+      </button>
+    </div>
+
+    <div class="collapse mb-3" id="addContactForm">
+      <form method="post" action="{% url 'dds:contact_add' hotel.id %}">
+        {% csrf_token %}
+        <div class="row g-2">
+          <div class="col-md-3">
+            <input type="text" name="name" class="form-control form-control-sm" placeholder="Имя *" required>
+          </div>
+          <div class="col-md-3">
+            <input type="text" name="position" class="form-control form-control-sm" placeholder="Должность">
+          </div>
+          <div class="col-md-2">
+            <input type="text" name="phone" class="form-control form-control-sm" placeholder="Телефон">
+          </div>
+          <div class="col-md-2">
+            <input type="text" name="whatsapp" class="form-control form-control-sm" placeholder="WhatsApp">
+          </div>
+          <div class="col-md-2 d-grid">
+            <button type="submit" class="btn btn-sm btn-primary">Сохранить</button>
+          </div>
+        </div>
+      </form>
+    </div>
+
+    {% if contacts %}
+    <div class="table-responsive">
+      <table class="table table-sm align-middle mb-0">
+        <thead>
+          <tr>
+            <th>Имя</th>
+            <th>Должность</th>
+            <th>Телефон</th>
+            <th>WhatsApp</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for c in contacts %}
+          <tr>
+            <td><b>{{ c.name }}</b></td>
+            <td class="text-muted">{{ c.position|default:"—" }}</td>
+            <td>{% if c.phone %}<a href="tel:{{ c.phone }}">{{ c.phone }}</a>{% else %}—{% endif %}</td>
+            <td>{% if c.whatsapp %}<a href="https://wa.me/{{ c.whatsapp|cut:'+' }}" target="_blank">{{ c.whatsapp }}</a>{% else %}—{% endif %}</td>
+            <td>
+              <form method="post" action="{% url 'dds:contact_delete' hotel.id c.id %}" style="display:inline">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-sm btn-outline-danger py-0 px-1" onclick="return confirm('Удалить контакт?')">✕</button>
+              </form>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="text-muted small">Контакты не добавлены</div>
+    {% endif %}
+  </div>
+</div>
+
+
+<!-- ✅ ДДС итоги за период -->
+<div class="row g-2 mb-3">
+  <div class="col-md-4">
+    <div class="card app-card">
+      <div class="card-body">
+        <div class="text-muted small">Доход с номеров (за период)</div>
+        <div class="fs-4"><b>{{ rooms_income_total }}</b></div>
+        <div class="text-muted small">* по source="rooms" / названию статьи</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-4">
+    <div class="card app-card">
+      <div class="card-body">
+        <div class="text-muted small">Общий приход (за период)</div>
+        <div class="fs-4"><b>{{ income_total }}</b></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-4">
+    <div class="card app-card">
+      <div class="card-body">
+        <div class="text-muted small">Расход / Остаток (за период)</div>
+        <div class="fs-6">Расход: <b>{{ expense_total }}</b></div>
+        <div class="fs-5">Остаток: <b>{{ balance }}</b></div>
+      </div>
+    </div>
+  </div>
+</div>
+<!-- ✅ Доходы / Расходы по категориям и подкатегориям -->
+<div class="row g-2 mb-3">
+  <!-- ДОХОДЫ -->
+  <div class="col-md-6">
+    <div class="card app-card">
+      <div class="card-body">
+        <h2 class="h6 mb-3">Доходы — по категориям</h2>
+
+        <div class="table-responsive">
+          <table class="table table-sm align-middle">
+            <thead>
+              <tr>
+                <th>Категория</th>
+                <th class="text-end">Сумма</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for g in income_groups %}
+                <tr class="table-light">
+                  <td><b>{{ g.name }}</b></td>
+                  <td class="text-end"><b>{{ g.total }}</b></td>
+                </tr>
+
+                {% for s in g.subs %}
+                <tr>
+                  <td class="ps-4">— {{ s.name }}</td>
+                  <td class="text-end">{{ s.total }}</td>
+                </tr>
+                {% endfor %}
+              {% empty %}
+                <tr><td colspan="2" class="text-muted">Нет доходов за период</td></tr>
+              {% endfor %}
+
+              {% if income_uncat %}
+              <tr>
+                <td class="text-muted">Без категории</td>
+                <td class="text-end text-muted">{{ income_uncat }}</td>
+              </tr>
+              {% endif %}
+            </tbody>
+          </table>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- РАСХОДЫ -->
+  <div class="col-md-6">
+    <div class="card app-card">
+      <div class="card-body">
+        <h2 class="h6 mb-3">Расходы — по категориям</h2>
+
+        <div class="table-responsive">
+          <table class="table table-sm align-middle">
+            <thead>
+              <tr>
+                <th>Категория</th>
+                <th class="text-end">Сумма</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for g in expense_groups %}
+                <tr class="table-light">
+                  <td><b>{{ g.name }}</b></td>
+                  <td class="text-end"><b>{{ g.total }}</b></td>
+                </tr>
+
+                {% for s in g.subs %}
+                <tr>
+                  <td class="ps-4">— {{ s.name }}</td>
+                  <td class="text-end">{{ s.total }}</td>
+                </tr>
+                {% endfor %}
+              {% empty %}
+                <tr><td colspan="2" class="text-muted">Нет расходов за период</td></tr>
+              {% endfor %}
+
+              {% if expense_uncat %}
+              <tr>
+                <td class="text-muted">Без категории</td>
+                <td class="text-end text-muted">{{ expense_uncat }}</td>
+              </tr>
+              {% endif %}
+            </tbody>
+          </table>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ✅ Последние операции -->
+<div class="card app-card mb-3">
+  <div class="card-body">
+    <h2 class="h6 mb-3">Последние операции</h2>
+
+    <div class="table-responsive">
+      <table class="table table-sm align-middle">
+        <thead>
+          <tr>
+            <th>Дата</th>
+            <th>Статья</th>
+            <th>Счёт</th>
+            <th class="text-end">Сумма</th>
+            <th>Источник</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for op in last_ops %}
+          <tr>
+            <td>{{ op.happened_at|date:"d.m.Y H:i" }}</td>
+            <td>{{ op.article.get_kind_display }} — {{ op.article.name }}</td>
+            <td>{{ op.get_method_display }}</td>
+            <td class="text-end"><b>{{ op.amount }}</b></td>
+            <td class="text-muted">{{ op.source|default:"—" }}</td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="5" class="text-muted">Операций пока нет</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+  </div>
+</div>
+
+<!-- ✅ Доход с номеров по дням -->
+<div class="card app-card mb-3">
+  <div class="card-body">
+    <h2 class="h6 mb-3">Доход с номеров по дням</h2>
+
+    <div class="table-responsive">
+      <table class="table table-sm align-middle">
+        <thead>
+          <tr>
+            <th>Дата</th>
+            <th class="text-end">Сумма</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for r in rooms_by_day %}
+          <tr>
+            <td>{{ r.day|date:"d.m.Y" }}</td>
+            <td class="text-end"><b>{{ r.total }}</b></td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="2" class="text-muted">Нет доходов с номеров за период</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+  </div>
+</div>
+
+{% endblock %}

@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+{% block title %}Статьи ДДС — Акча{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <div>
+    <h1 class="h4 mb-0">Статьи ДДС</h1>
+    <div class="text-muted small">Единый справочник статей для всех точек</div>
+  </div>
+  <a class="btn btn-outline-secondary" href="{% url 'dds:dds_dashboard' %}">← Назад</a>
+</div>
+
+<div class="row g-3">
+  <div class="col-lg-4">
+    <div class="card app-card">
+      <div class="card-body">
+        <h2 class="h6 mb-3">Добавить статью</h2>
+
+        {% if form.errors %}
+          <div class="alert alert-danger">
+            {{ form.errors }}
+          </div>
+        {% endif %}
+
+        <form method="post">
+          {% csrf_token %}
+          <div class="mb-2">
+            <label class="form-label">Тип</label>
+            {{ form.kind }}
+          </div>
+          <div class="mb-2">
+            <label class="form-label">Название</label>
+            {{ form.name }}
+          </div>
+          <div class="form-check mb-3">
+            {{ form.is_active }}
+            <label class="form-check-label">Активна</label>
+          </div>
+
+          <button class="btn btn-dark w-100">Сохранить</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-8">
+    <div class="card app-card">
+      <div class="card-body">
+        <h2 class="h6 mb-3">Список статей</h2>
+
+        <div class="table-responsive">
+          <table class="table table-sm align-middle">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Тип</th>
+                <th>Название</th>
+                <th>Статус</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for a in articles %}
+                <tr>
+                  <td class="text-muted">{{ a.id }}</td>
+                  <td>
+                    <span class="badge {% if a.kind == 'income' %}bg-success{% else %}bg-danger{% endif %}">
+                      {{ a.get_kind_display }}
+                    </span>
+                  </td>
+                  <td>{{ a.name }}</td>
+                  <td>
+                    {% if a.is_active %}
+                      <span class="badge bg-primary">Активна</span>
+                    {% else %}
+                      <span class="badge bg-secondary">Отключена</span>
+                    {% endif %}
+                  </td>
+                </tr>
+              {% empty %}
+                <tr>
+                  <td colspan="4" class="text-muted">Пока нет статей</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

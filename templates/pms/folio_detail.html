@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <div>
+    <h1 class="h5 mb-1">Фолио: {{ folio.company.name }}</h1>
+    <div class="text-muted small">{{ folio.hotel.name }}</div>
+  </div>
+  <div class="d-flex gap-2">
+    <a class="btn btn-sm btn-outline-secondary" href="{% url 'pms:folio_list' %}">← Назад</a>
+    <a class="btn btn-sm btn-success" href="{% url 'pms:folio_payment' folio.id %}">Внести оплату</a>
+  </div>
+</div>
+
+<div class="row g-2 mb-3">
+  <div class="col-md-4">
+    <div class="card">
+      <div class="card-body">
+        <div class="text-muted small">Баланс</div>
+        <div class="fs-3"><b>{{ balance }}</b></div>
+        {% if folio.is_closed %}
+          <span class="badge bg-secondary">Закрыто</span>
+        {% else %}
+          <span class="badge bg-warning text-dark">Открыто</span>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-body">
+    <h2 class="h6 mb-3">Операции фолио</h2>
+    <div class="table-responsive">
+      <table class="table table-sm align-middle">
+        <thead>
+          <tr>
+            <th>Дата</th>
+            <th>Тип</th>
+            <th>Описание</th>
+            <th class="text-end">Сумма</th>
+            <th class="text-end">Знак</th>
+            <th class="text-muted">ДДС/Касса</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for it in items %}
+            <tr>
+              <td>{{ it.happened_at|date:"d.m.Y H:i" }}</td>
+              <td>{{ it.get_item_type_display }}</td>
+              <td>{{ it.description|default:"—" }}</td>
+              <td class="text-end">{{ it.amount }}</td>
+              <td class="text-end"><b>{{ it.signed_amount }}</b></td>
+              <td class="text-muted small">
+                {% if it.dds_operation %}DDS #{{ it.dds_operation.id }}{% endif %}
+                {% if it.cash_movement %}{% if it.dds_operation %} • {% endif %}Cash #{{ it.cash_movement.id }}{% endif %}
+              </td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="6" class="text-muted">Пока операций нет</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
