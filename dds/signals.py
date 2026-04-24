@@ -25,6 +25,8 @@ def _fmt_amount(amount):
 def notify_dds_operation(sender, instance, created, **kwargs):
     if not created or instance.is_voided:
         return
+    if instance.source == "global_cash":
+        return
     from .telegram import notify_transaction
     kind_icon = "🟢" if instance.article.kind == "income" else "🔴"
     kind_label = "Доход" if instance.article.kind == "income" else "Расход"
