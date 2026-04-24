@@ -1,5 +1,4 @@
 from django.db.models.signals import post_save
-from django.db.models import Q
 from django.dispatch import receiver
 from .models import Point, CashRegister, DDSOperation, CashIncasso, CashTransfer
 
@@ -10,12 +9,9 @@ def ensure_cash_register(sender, instance, created, **kwargs):
         CashRegister.objects.get_or_create(hotel=instance)
 
 
-def _chat_ids_for_hotel(hotel):
+def _all_chat_ids():
     from accounts.models import Profile
-    profiles = Profile.objects.filter(tg_chat_id__gt="").filter(
-        Q(is_finance_admin=True) | Q(hotel=hotel)
-    )
-    return [p.tg_chat_id for p in profiles]
+    return list(Profile.objects.filter(tg_chat_id__gt="").values_list("tg_chat_id", flat=True))
 
 
 def _fmt_amount(amount):
@@ -45,7 +41,7 @@ def notify_dds_operation(sender, instance, created, **kwargs):
     lines.append(f"👤 {instance.created_by.get_full_name() or instance.created_by.username}")
     lines.append(f"🕐 {instance.happened_at.strftime('%d.%m.%Y %H:%M')}")
     text = "\n".join(lines)
-    notify_transaction(_chat_ids_for_hotel(instance.hotel), text)
+    notify_transaction(_all_chat_ids(), text)
 
 
 @receiver(post_save, sender=CashIncasso)
@@ -62,7 +58,7 @@ def notify_incasso(sender, instance, created, **kwargs):
         lines.append(f"💬 {instance.comment}")
     lines.append(f"👤 {instance.created_by.get_full_name() or instance.created_by.username}")
     lines.append(f"🕐 {instance.happened_at.strftime('%d.%m.%Y %H:%M')}")
-    notify_transaction(_chat_ids_for_hotel(instance.hotel), "\n".join(lines))
+    notify_transaction(_all_chat_ids(), "\n".join(lines))
 
 
 @receiver(post_save, sender=CashTransfer)
@@ -81,4 +77,4 @@ def notify_transfer(sender, instance, created, **kwargs):
         lines.append(f"💬 {instance.comment}")
     lines.append(f"👤 {instance.created_by.get_full_name() or instance.created_by.username}")
     lines.append(f"🕐 {instance.happened_at.strftime('%d.%m.%Y %H:%M')}")
-    notify_transaction(_chat_ids_for_hotel(instance.hotel), "\n".join(lines))
+    notify_transaction(_all_chat_ids(), "\n".join(lines))

@@ -145,7 +145,7 @@ MEDIA_ROOT = BASE_DIR.parent / "public_html" / "media"
 
 # Telegram bot token — вставьте токен от @BotFather
 TELEGRAM_BOT_TOKEN = "8514763834:AAG8pla8Ag4OwiGIOUvleUDDfpb9gtTFVhQ"
-TELEGRAM_BOT_USERNAME = ""  # например: "AkchaNotifyBot" (без @)
+TELEGRAM_BOT_USERNAME = "aba_N1_bot"
 
 CSRF_TRUSTED_ORIGINS = [
     "https://173b9765dbb1.ngrok-free.app",
