@@ -16,12 +16,15 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import include, path
-from .views1 import home 
+from .views1 import home
+from dds.views_tg import tg_webhook
+
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('',home),
+    path('', home),
     path("dds/", include("dds.urls")),
     path("accounts/", include("django.contrib.auth.urls")),
-    path('pms/', include("pms.urls"))
-
+    path("accounts/", include("accounts.urls")),
+    path('pms/', include("pms.urls")),
+    path("tg/webhook/", tg_webhook, name="tg_webhook"),
 ]

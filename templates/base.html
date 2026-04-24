@@ -69,6 +69,7 @@
             </span>
           {% endif %}
 
+          <a class="btn btn-outline-light btn-sm" href="{% url 'accounts:profile' %}">👤 Профиль</a>
           <a class="btn btn-outline-light btn-sm" href="/admin/">Админ</a>
           <form method="post" action="{% url 'logout' %}">
   {% csrf_token %}
