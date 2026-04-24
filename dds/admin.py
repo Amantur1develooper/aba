@@ -14,6 +14,8 @@ from .models import (
     CashMovement,
     CashIncasso,
     CashTransfer,
+    GlobalCashRegister,
+    GlobalCashOperation,
 )
 
 # ----------------------------
@@ -400,3 +402,38 @@ class CashTransferAdmin(admin.ModelAdmin):
     ordering = ("-happened_at", "-id")
     autocomplete_fields = ("hotel", "register", "created_by", "voided_by")
     readonly_fields = ("created_at", "voided_at")
+
+
+# ----------------------------
+# Admin: GlobalCashRegister
+# ----------------------------
+
+@admin.register(GlobalCashRegister)
+class GlobalCashRegisterAdmin(admin.ModelAdmin):
+    list_display = ("cash_balance", "mkassa_balance", "zadatok_balance", "optima_balance", "total", "updated_at")
+    readonly_fields = ("total", "updated_at")
+    fieldsets = (
+        ("Балансы (можно редактировать вручную)", {
+            "fields": (
+                ("cash_balance",),
+                ("mkassa_balance", "zadatok_balance", "optima_balance"),
+                ("total", "updated_at"),
+            )
+        }),
+    )
+
+    def has_add_permission(self, request):
+        return not GlobalCashRegister.objects.exists()
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+
+@admin.register(GlobalCashOperation)
+class GlobalCashOperationAdmin(admin.ModelAdmin):
+    date_hierarchy = "happened_at"
+    list_display = ("happened_at", "direction", "account", "amount", "comment", "created_by")
+    list_filter = ("direction", "account")
+    search_fields = ("comment",)
+    ordering = ("-happened_at", "-id")
+    readonly_fields = ("created_at",)

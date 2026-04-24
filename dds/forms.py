@@ -37,33 +37,13 @@ class DDSOperationForm(forms.ModelForm):
         if kind in (DDSArticle.INCOME, DDSArticle.EXPENSE):
             qs = qs.filter(kind=kind)
 
-        # 3) ✅ ГЛАВНОЕ: фильтр по точке
-        # показываем:
-        # - статьи привязанные к выбранной точке
-        # - ИЛИ “общие” статьи (у которых hotels пустой)
-        if selected_hotel:
-            qs = qs.filter(Q(hotels=selected_hotel) | Q(hotels__isnull=True)).distinct()
-        else:
-            # если точка не выбрана — можно показывать только общие
-            # (чтобы не было “всё подряд”)
-            qs = qs.filter(hotels__isnull=True).distinct()
-
         self.fields["article"].queryset = qs
         self._filter_hotel = selected_hotel
 
     def clean_article(self):
         article = self.cleaned_data.get("article")
-        hotel = self.cleaned_data.get("hotel") or getattr(self, "_filter_hotel", None)
-
         if not article:
             return article
-        if not hotel:
-            raise ValidationError("Сначала выберите точку.")
-
-        # ✅ если у статьи есть ограничения по отелям — проверяем
-        if article.hotels.exists() and not article.hotels.filter(pk=hotel.pk).exists():
-            raise ValidationError("Эта статья не доступна для выбранной точки.")
-
         return article
 
 
@@ -300,7 +280,7 @@ class DDSOpCreateForm(forms.ModelForm):
     class Meta:
         model = DDSOperation
         fields = ["article", "amount", "happened_at", "method", "counterparty", "comment"]
-        # source у тебя в модели есть, но в этой “быстрой форме” ты его не показываешь
+        # source у тебя в модели есть, но в этой "быстрой форме" ты его не показываешь
 
     def __init__(self, *args, kind=None, category_id=None, hotel=None, **kwargs):
         super().__init__(*args, **kwargs)
@@ -333,14 +313,6 @@ class DDSOpCreateForm(forms.ModelForm):
         else:
             qs = qs.none()
 
-        # 3) ✅ фильтр по точке:
-        # (points пустой) ИЛИ (points содержит эту точку)
-        if hotel:
-            qs = qs.filter(Q(hotels=hotel) | Q(hotels__isnull=True)).distinct()
-        else:
-            # если отель не передали — показываем только “общие”
-            qs = qs.filter(hotels__isnull=True).distinct()
-
         self.fields["article"].queryset = qs.select_related("category", "category__parent").order_by("name")
         self._hotel = hotel
 
@@ -348,11 +320,6 @@ class DDSOpCreateForm(forms.ModelForm):
         article = self.cleaned_data.get("article")
         if not article:
             return article
-
-        # ✅ защита: если статья ограничена точками — проверяем доступ
-        if self._hotel and article.hotels.exists() and not article.hotels.filter(pk=self._hotel.pk).exists():
-            raise ValidationError("Эта статья не доступна для выбранной точки.")
-
         return article
 
 

@@ -88,6 +88,16 @@ def apply_cash_movement(
     setattr(reg, field, new_value)
     reg.save(update_fields=[field, "updated_at"])
 
+    # ✅ обновляем общую кассу
+    from .models import GlobalCashRegister
+    gcr = GlobalCashRegister.objects.select_for_update().get_or_create(pk=1)[0]
+    gcr_current = getattr(gcr, field) or Decimal("0")
+    if direction == CashMovement.IN:
+        setattr(gcr, field, gcr_current + amount)
+    else:
+        setattr(gcr, field, max(Decimal("0"), gcr_current - amount))
+    gcr.save(update_fields=[field, "updated_at"])
+
     return move
 
 
