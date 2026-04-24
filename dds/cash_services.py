@@ -13,8 +13,40 @@ FIELD_MAP = {
 }
 
 
+ACCOUNT_LABELS = {
+    "cash": "Наличные", "mkassa": "Банк1", "zadatok": "Задаток", "optima": "Банк2",
+}
+
+
 class CashTransferError(Exception):
     pass
+
+
+def _notify_global(*, icon, label, account, amount, comment, created_by,
+                   happened_at, article_name=None, distributions=None):
+    """Send Telegram notification for global cash operations (non-blocking)."""
+    try:
+        from .telegram import notify_transaction
+        from accounts.models import Profile
+        chat_ids = list(Profile.objects.filter(tg_chat_id__gt="").values_list("tg_chat_id", flat=True))
+        if not chat_ids:
+            return
+        lines = [
+            f"{icon} <b>{label}</b>",
+            f"💰 {float(amount):,.0f} сом  |  {ACCOUNT_LABELS.get(account, account)}",
+        ]
+        if article_name:
+            lines.append(f"📋 {article_name}")
+        if distributions:
+            pts = "  ".join(f"{p.name}: {float(a):,.0f}" for p, a in distributions)
+            lines.append(f"📊 {pts}")
+        if comment:
+            lines.append(f"💬 {comment}")
+        lines.append(f"👤 {created_by.get_full_name() or created_by.username}")
+        lines.append(f"🕐 {happened_at.strftime('%d.%m.%Y %H:%M')}")
+        notify_transaction(chat_ids, "\n".join(lines))
+    except Exception:
+        pass
 
 
 def _to_decimal(x) -> Decimal:
@@ -246,17 +278,24 @@ def global_cash_income(*, account: str, amount, comment: str, created_by, happen
         comment=comment,
         created_by=created_by,
     )
+
+    _notify_global(
+        icon="🟢", label="Пополнение общей кассы",
+        account=account, amount=amount, comment=comment,
+        created_by=created_by, happened_at=happened_at,
+    )
     return op
 
 
 @transaction.atomic
-def global_cash_expense(*, account: str, amount, comment: str, created_by, happened_at=None, points_qs=None):
+def global_cash_expense(*, account: str, amount, comment: str, created_by,
+                        happened_at=None, points_qs=None, article=None):
     """
-    Расход из общей кассы с распределением по точкам.
-    Деньги списываются с GlobalCashRegister и с касс точек.
-    Если у точки не хватает — дефицит перекладывается на другие.
+    Расход из общей кассы с равномерным распределением по точкам.
+    Если article передан — создаёт DDSOperation для каждой точки.
+    Если у точки не хватает — дефицит покрывают другие точки.
     """
-    from .models import GlobalCashRegister, GlobalCashOperation, GlobalCashDistribution
+    from .models import GlobalCashRegister, GlobalCashOperation, GlobalCashDistribution, DDSOperation
 
     amount = _to_decimal(amount)
     if amount <= 0:
@@ -272,53 +311,59 @@ def global_cash_expense(*, account: str, amount, comment: str, created_by, happe
     if amount > gcr_balance:
         raise ValidationError(f"Недостаточно средств в общей кассе. Доступно: {gcr_balance}")
 
-    # Собираем активные точки с их балансами по нужному счёту
     if points_qs is None:
         points_qs = Point.objects.filter(is_active=True)
-
     points_list = list(points_qs)
     if not points_list:
         raise ValidationError("Нет активных точек для распределения.")
 
-    # Получаем кассы точек под блокировкой
-    regs = {
-        r.hotel_id: r
-        for r in CashRegister.objects.select_for_update().filter(hotel__in=points_list)
-    }
-    # у кого нет кассы — создаём
+    # кассы под блокировкой
+    regs = {r.hotel_id: r for r in CashRegister.objects.select_for_update().filter(hotel__in=points_list)}
     for p in points_list:
         if p.id not in regs:
             r, _ = CashRegister.objects.get_or_create(hotel=p)
             regs[p.id] = r
 
-    points_balances = [
-        (p, getattr(regs[p.id], field) or Decimal("0"))
-        for p in points_list
-    ]
-
+    points_balances = [(p, getattr(regs[p.id], field) or Decimal("0")) for p in points_list]
     distributions = _distribute_amount(amount, points_balances)
 
-    # Списываем с общей кассы
+    # списываем с общей кассы
     setattr(gcr, field, gcr_balance - amount)
     gcr.save(update_fields=[field, "updated_at"])
 
-    # Создаём операцию
     op = GlobalCashOperation.objects.create(
         direction=GlobalCashOperation.OUT,
         account=account,
         amount=amount,
         happened_at=happened_at,
         comment=comment,
+        article=article,
         created_by=created_by,
     )
 
-    # Списываем с касс точек и сохраняем распределение
     for point, dist_amount, note in distributions:
         if dist_amount <= 0:
             continue
+
+        # создаём DDSOperation для точки (если указана статья)
+        if article:
+            dds_op = DDSOperation.objects.create(
+                hotel=point,
+                article=article,
+                amount=dist_amount,
+                happened_at=happened_at,
+                method=account,
+                comment=comment or f"Общая касса — распределение",
+                source="global_cash",
+                created_by=created_by,
+            )
+        else:
+            dds_op = None
+
+        # обновляем кассу точки напрямую (минуя apply_cash_movement чтобы не задвоить GCR)
         reg = regs[point.id]
         current = getattr(reg, field) or Decimal("0")
-        setattr(reg, field, current - dist_amount)
+        setattr(reg, field, max(Decimal("0"), current - dist_amount))
         reg.save(update_fields=[field, "updated_at"])
 
         GlobalCashDistribution.objects.create(
@@ -328,4 +373,12 @@ def global_cash_expense(*, account: str, amount, comment: str, created_by, happe
             note=note,
         )
 
+    article_name = article.name if article else None
+    _notify_global(
+        icon="🔴", label="Расход из общей кассы",
+        account=account, amount=amount, comment=comment,
+        created_by=created_by, happened_at=happened_at,
+        article_name=article_name,
+        distributions=[(p, a) for p, a, _ in distributions if a > 0],
+    )
     return op

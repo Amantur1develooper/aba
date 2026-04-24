@@ -161,6 +161,24 @@
           {% csrf_token %}
           <input type="hidden" name="action" value="expense">
           <div class="field">
+            <label>Категория</label>
+            <select id="exp-category" onchange="filterArticles()">
+              <option value="">— Все категории —</option>
+              {% for cat in expense_categories %}
+              <option value="{{ cat.id }}">{% if cat.parent %}{{ cat.parent.name }} → {% endif %}{{ cat.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="field">
+            <label>Статья расхода *</label>
+            <select name="article_id" id="exp-article" required>
+              <option value="">— Выберите статью —</option>
+              {% for art in expense_articles %}
+              <option value="{{ art.id }}" data-cat="{{ art.category_id|default:'' }}">{{ art.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="field">
             <label>Счёт</label>
             <select name="account">
               {% for code, label in account_choices %}
@@ -200,6 +218,7 @@
         <tr>
           <th>Дата</th>
           <th>Тип</th>
+          <th>Статья</th>
           <th>Счёт</th>
           <th>Сумма</th>
           <th>Распределение по точкам</th>
@@ -216,6 +235,14 @@
             {% else %}
               <span class="chip-out">↓ Расход</span>
             {% endif %}
+          </td>
+          <td style="font-size:12px;color:var(--text2);">
+            {% if op.article %}
+              {% if op.article.category %}
+                <span style="color:var(--text3);">{{ op.article.category.name }} /</span>
+              {% endif %}
+              {{ op.article.name }}
+            {% else %}—{% endif %}
           </td>
           <td style="color:var(--text2);font-size:12px;">{{ op.get_account_display }}</td>
           <td class="mono">{{ op.amount|floatformat:2 }}</td>
@@ -238,11 +265,23 @@
           <td style="color:var(--text2);font-size:12px;">{{ op.comment|default:"—" }}</td>
         </tr>
         {% empty %}
-        <tr><td colspan="6" style="padding:24px;text-align:center;color:var(--text3);font-style:italic;">Операций пока нет</td></tr>
+        <tr><td colspan="7" style="padding:24px;text-align:center;color:var(--text3);font-style:italic;">Операций пока нет</td></tr>
         {% endfor %}
       </tbody>
     </table>
   </div>
 
 </div>
+
+<script>
+function filterArticles() {
+  const catId = document.getElementById('exp-category').value;
+  const sel = document.getElementById('exp-article');
+  sel.value = '';
+  Array.from(sel.options).forEach(opt => {
+    if (!opt.value) return;
+    opt.hidden = catId ? opt.dataset.cat !== catId : false;
+  });
+}
+</script>
 {% endblock %}

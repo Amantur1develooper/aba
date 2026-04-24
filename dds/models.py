@@ -429,13 +429,17 @@ class GlobalCashOperation(models.Model):
 
     ACCOUNT_CHOICES = CashMovement.ACCOUNT_CHOICES
 
-    direction  = models.CharField(max_length=3, choices=DIR_CHOICES, verbose_name="Тип")
-    account    = models.CharField(max_length=10, choices=ACCOUNT_CHOICES, verbose_name="Счёт")
-    amount     = models.DecimalField(max_digits=14, decimal_places=2, verbose_name="Сумма")
+    direction   = models.CharField(max_length=3, choices=DIR_CHOICES, verbose_name="Тип")
+    account     = models.CharField(max_length=10, choices=ACCOUNT_CHOICES, verbose_name="Счёт")
+    amount      = models.DecimalField(max_digits=14, decimal_places=2, verbose_name="Сумма")
     happened_at = models.DateTimeField(default=timezone.now, verbose_name="Дата")
-    comment    = models.TextField(blank=True, verbose_name="Комментарий")
-    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="global_cash_ops")
-    created_at = models.DateTimeField(auto_now_add=True)
+    comment     = models.TextField(blank=True, verbose_name="Комментарий")
+    article     = models.ForeignKey(
+        "DDSArticle", on_delete=models.SET_NULL, null=True, blank=True,
+        related_name="global_ops", verbose_name="Статья расхода"
+    )
+    created_by  = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="global_cash_ops")
+    created_at  = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         verbose_name = "Операция общей кассы"

@@ -1641,15 +1641,11 @@ def accounting_export_excel(request):
 
 @login_required
 def global_cash_view(request):
-    from .models import GlobalCashRegister, GlobalCashOperation
+    from .models import GlobalCashRegister, GlobalCashOperation, DDSCategory, DDSArticle
     from .cash_services import global_cash_income, global_cash_expense
 
-    profile = getattr(request.user, "profile", None)
-    if not (request.user.is_superuser or (profile and profile.is_finance_admin)):
-        return redirect("dds:hotel_list")
-
     gcr = GlobalCashRegister.get()
-    ops = GlobalCashOperation.objects.prefetch_related("distributions__point").order_by("-happened_at")[:100]
+    ops = GlobalCashOperation.objects.select_related("article__category").prefetch_related("distributions__point").order_by("-happened_at")[:100]
 
     ACCOUNT_CHOICES = [
         ("cash",    "Наличные"),
@@ -1657,6 +1653,9 @@ def global_cash_view(request):
         ("zadatok", "Задаток"),
         ("optima",  "Банк2"),
     ]
+
+    expense_categories = list(DDSCategory.objects.filter(kind=DDSCategory.EXPENSE, is_active=True).order_by("parent_id", "name"))
+    expense_articles   = list(DDSArticle.objects.filter(kind=DDSArticle.EXPENSE, is_active=True).select_related("category").order_by("category_id", "name"))
 
     error = None
     if request.method == "POST":
@@ -1682,7 +1681,17 @@ def global_cash_view(request):
                 global_cash_income(account=account, amount=amount, comment=comment, created_by=request.user, happened_at=happened_at)
                 messages.success(request, f"Пополнение {amount} добавлено в общую кассу.")
             elif action == "expense":
-                global_cash_expense(account=account, amount=amount, comment=comment, created_by=request.user, happened_at=happened_at)
+                article_id = request.POST.get("article_id")
+                article = None
+                if article_id:
+                    try:
+                        article = DDSArticle.objects.get(pk=article_id, kind=DDSArticle.EXPENSE)
+                    except DDSArticle.DoesNotExist:
+                        pass
+                if not article:
+                    raise ValidationError("Выберите статью расхода.")
+                global_cash_expense(account=account, amount=amount, comment=comment,
+                                    created_by=request.user, happened_at=happened_at, article=article)
                 messages.success(request, f"Расход {amount} распределён по точкам.")
             return redirect("dds:global_cash")
         except Exception as e:
@@ -1692,6 +1701,8 @@ def global_cash_view(request):
         "gcr": gcr,
         "ops": ops,
         "account_choices": ACCOUNT_CHOICES,
+        "expense_categories": expense_categories,
+        "expense_articles": expense_articles,
         "error": error,
     })
 
