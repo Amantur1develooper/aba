@@ -2,65 +2,82 @@
 {% block title %}Точки — Акча{% endblock %}
 
 {% block content %}
-<style>
-  .hotel-card { cursor: pointer; transition: .12s ease; }
-  .hotel-card:hover { transform: translateY(-1px); }
-  .kpi { font-size: 12px; color: var(--bs-secondary); }
-  .money { font-weight: 700; }
-</style>
-
 <div class="d-flex justify-content-between align-items-center mb-3">
   <div>
     <h1 class="h4 mb-0">Точки</h1>
-    <div class="text-muted small">Нажми на точка, чтобы открыть кассу и отчёты</div>
+    <div class="text-muted small">Нажми на карточку, чтобы открыть отчёты</div>
   </div>
   <a class="btn btn-outline-secondary" href="{% url 'dds:dds_dashboard' %}">← Назад</a>
 </div>
 
 <div class="row g-3">
   {% for h in hotels %}
-      <div class="col-12 col-md-6 col-xl-4">
-        <div class="card app-card hotel-card" data-href="{% url 'dds:hotel_detail' h.id %}">
-          <div class="card-body">
-            <div class="d-flex justify-content-between align-items-start gap-2">
-              <div>
-                <div class="d-flex align-items-center gap-2">
-                  <h2 class="h6 mb-0">{{ h.name }}</h2>
-                  {% if h.is_active %}
-                    <span class="badge bg-success">Активен</span>
-                  {% else %}
-                    <span class="badge bg-secondary">Отключен</span>
-                  {% endif %}
-                </div>
-                  </div>
+  <div class="col-12 col-md-6">
+    <div class="card app-card h-100" style="cursor:pointer" data-href="{% url 'dds:hotel_detail' h.id %}">
+      <div class="card-body d-flex flex-column gap-2">
 
-              <a class="btn btn-sm btn-dark" href="{% url 'dds:hotel_detail' h.id %}">
-                Открыть
-              </a>
+        <!-- Заголовок -->
+        <div class="d-flex justify-content-between align-items-start">
+          <div>
+            <div class="d-flex align-items-center gap-2 mb-1">
+              <h2 class="h6 mb-0">{{ h.name }}</h2>
+              {% if h.is_active %}
+                <span class="badge bg-success">Активен</span>
+              {% else %}
+                <span class="badge bg-secondary">Отключен</span>
+              {% endif %}
             </div>
-
-            <div class="d-flex flex-wrap gap-2 mt-3">
-              <a class="btn btn-sm btn-outline-primary" href="{% url 'dds:dds_dashboard' %}?hotel={{ h.id }}">ДДС</a>
-              <a class="btn btn-sm btn-outline-secondary" href="{% url 'dds:cash_transfer_create' h.id %}">Перевод</a>
-              {# если есть PMS #}
-              {# <a class="btn btn-sm btn-outline-dark" href="{% url 'pms:board' %}?hotel={{ h.id }}">Шахматка</a> #}
-            </div>
-
+            {% if h.get_business_type_display %}
+            <div class="text-muted small">{{ h.get_business_type_display }}</div>
+            {% endif %}
           </div>
+          <a class="btn btn-sm btn-dark" href="{% url 'dds:hotel_detail' h.id %}">Открыть</a>
         </div>
+
+        <!-- Ссылки: сайт, App Store, Play Market -->
+        {% if h.website or h.app_store_url or h.play_market_url %}
+        <div class="d-flex flex-wrap gap-2">
+          {% if h.website %}
+          <a href="{{ h.website }}" target="_blank" rel="noopener"
+             class="btn btn-sm btn-outline-secondary d-flex align-items-center gap-1">
+            🌐 Сайт
+          </a>
+          {% endif %}
+          {% if h.app_store_url %}
+          <a href="{{ h.app_store_url }}" target="_blank" rel="noopener"
+             class="btn btn-sm btn-outline-dark d-flex align-items-center gap-1">
+            🍎 App Store
+          </a>
+          {% endif %}
+          {% if h.play_market_url %}
+          <a href="{{ h.play_market_url }}" target="_blank" rel="noopener"
+             class="btn btn-sm btn-outline-success d-flex align-items-center gap-1">
+            ▶ Google Play
+          </a>
+          {% endif %}
+        </div>
+        {% endif %}
+
+        <!-- Действия -->
+        <div class="d-flex flex-wrap gap-2 mt-auto pt-1">
+          <a class="btn btn-sm btn-outline-primary" href="{% url 'dds:hotel_detail' h.id %}">📊 ДДС</a>
+          <a class="btn btn-sm btn-outline-secondary" href="{% url 'dds:cash_transfer_create' h.id %}">↔ Перевод</a>
+          <a class="btn btn-sm btn-outline-dark" href="{% url 'dds:incasso_create' h.id %}">🏦 Инкассация</a>
+        </div>
+
       </div>
-  {% empty %}
-    <div class="col-12">
-      <div class="alert alert-light border">Нет доступных точек</div>
     </div>
+  </div>
+  {% empty %}
+  <div class="col-12">
+    <div class="alert alert-light border">Нет доступных точек</div>
+  </div>
   {% endfor %}
 </div>
 
 <script>
-  // клик по карточке -> детали точки
-  document.querySelectorAll(".hotel-card").forEach((el) => {
-    el.addEventListener("click", (e) => {
-      // если кликнули по кнопке/ссылке внутри — не перехватываем
+  document.querySelectorAll("[data-href]").forEach(el => {
+    el.addEventListener("click", e => {
       if (e.target.closest("a, button")) return;
       window.location.href = el.dataset.href;
     });

@@ -33,9 +33,42 @@
 </form>
 
 <div class="row g-2 mb-3">
-  <div class="col-md-4"><div class="card app-card"><div class="card-body">Доход: <b>{{ income_sum }}</b></div></div></div>
-  <div class="col-md-4"><div class="card app-card"><div class="card-body">Расход: <b>{{ expense_sum }}</b></div></div></div>
-  <div class="col-md-4"><div class="card app-card"><div class="card-body">Баланс: <b>{{ balance }}</b></div></div></div>
+  <div class="col-md-3">
+    <div class="card app-card">
+      <div class="card-body">
+        <div class="text-muted small">Доход (за период)</div>
+        <div class="fs-5 text-success"><b>{{ income_sum }}</b></div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card app-card">
+      <div class="card-body">
+        <div class="text-muted small">Расход (за период)</div>
+        <div class="fs-5 text-danger"><b>{{ expense_sum }}</b></div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card app-card">
+      <div class="card-body">
+        <div class="text-muted small">Баланс (за период)</div>
+        <div class="fs-5"><b>{{ balance }}</b></div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <a href="{% url 'dds:global_cash' %}" class="card app-card text-decoration-none">
+      <div class="card-body">
+        <div class="text-muted small">🏛 Общая касса</div>
+        <div class="fs-5 text-primary"><b>{{ gcr.total|floatformat:2 }}</b></div>
+        <div class="text-muted" style="font-size:11px;">
+          Нал: {{ gcr.cash_balance|floatformat:0 }} &nbsp;|&nbsp;
+          Банк: {{ gcr.noncash_total|floatformat:0 }}
+        </div>
+      </div>
+    </a>
+  </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>

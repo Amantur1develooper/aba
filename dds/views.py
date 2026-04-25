@@ -685,15 +685,19 @@ def dds_dashboard(request):
 
     # 2) ИНКАССАЦИИ
     incassos = CashIncasso.objects.select_related("hotel").filter(hotel__in=hotels_filter)
+    from .models import GlobalCashRegister
+    gcr = GlobalCashRegister.get()
+
     return render(request, "dds/dashboard.html", {
         "hotels": hotels_qs,
         "selected_hotel": selected_hotel,
         "date_from": date_from,
         "date_to": date_to,
-        "incassos": incassos.order_by("-happened_at")[:300], 
+        "incassos": incassos.order_by("-happened_at")[:300],
         "income_sum": income_sum,
         "expense_sum": expense_sum,
         "balance": balance,
+        "gcr": gcr,
 
         "method_headers": method_headers,
 

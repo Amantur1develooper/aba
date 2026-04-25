@@ -21,6 +21,15 @@ def _fmt_amount(amount):
         return str(amount)
 
 
+def _gcr_line():
+    try:
+        from .models import GlobalCashRegister
+        gcr = GlobalCashRegister.objects.get(pk=1)
+        return f"🏛 <b>Общая касса:</b> {_fmt_amount(gcr.total)} сом"
+    except Exception:
+        return ""
+
+
 @receiver(post_save, sender=DDSOperation)
 def notify_dds_operation(sender, instance, created, **kwargs):
     if not created or instance.is_voided:
@@ -42,8 +51,10 @@ def notify_dds_operation(sender, instance, created, **kwargs):
         lines.append(f"💬 {instance.comment}")
     lines.append(f"👤 {instance.created_by.get_full_name() or instance.created_by.username}")
     lines.append(f"🕐 {instance.happened_at.strftime('%d.%m.%Y %H:%M')}")
-    text = "\n".join(lines)
-    notify_transaction(_all_chat_ids(), text)
+    gcr = _gcr_line()
+    if gcr:
+        lines += ["─────────────────", gcr]
+    notify_transaction(_all_chat_ids(), "\n".join(lines))
 
 
 @receiver(post_save, sender=CashIncasso)
@@ -60,6 +71,9 @@ def notify_incasso(sender, instance, created, **kwargs):
         lines.append(f"💬 {instance.comment}")
     lines.append(f"👤 {instance.created_by.get_full_name() or instance.created_by.username}")
     lines.append(f"🕐 {instance.happened_at.strftime('%d.%m.%Y %H:%M')}")
+    gcr = _gcr_line()
+    if gcr:
+        lines += ["─────────────────", gcr]
     notify_transaction(_all_chat_ids(), "\n".join(lines))
 
 
@@ -79,4 +93,7 @@ def notify_transfer(sender, instance, created, **kwargs):
         lines.append(f"💬 {instance.comment}")
     lines.append(f"👤 {instance.created_by.get_full_name() or instance.created_by.username}")
     lines.append(f"🕐 {instance.happened_at.strftime('%d.%m.%Y %H:%M')}")
+    gcr = _gcr_line()
+    if gcr:
+        lines += ["─────────────────", gcr]
     notify_transaction(_all_chat_ids(), "\n".join(lines))

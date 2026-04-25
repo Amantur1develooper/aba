@@ -44,6 +44,12 @@ def _notify_global(*, icon, label, account, amount, comment, created_by,
             lines.append(f"💬 {comment}")
         lines.append(f"👤 {created_by.get_full_name() or created_by.username}")
         lines.append(f"🕐 {happened_at.strftime('%d.%m.%Y %H:%M')}")
+        try:
+            from .models import GlobalCashRegister
+            gcr = GlobalCashRegister.objects.get(pk=1)
+            lines += ["─────────────────", f"🏛 <b>Общая касса:</b> {float(gcr.total):,.0f} сом"]
+        except Exception:
+            pass
         notify_transaction(chat_ids, "\n".join(lines))
     except Exception:
         pass
